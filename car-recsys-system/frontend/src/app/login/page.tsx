@@ -57,7 +57,7 @@ export default function LoginPage() {
               type="text"
               placeholder="Enter username or email"
               {...register('username', { required: 'Username/Email is required' })}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
             {errors.username && (
               <p className="text-red-600 text-sm mt-1">{errors.username.message}</p>
@@ -71,8 +71,9 @@ export default function LoginPage() {
             <input
               id="password"
               type="password"
+              placeholder="Enter password"
               {...register('password', { required: 'Password is required' })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
             {errors.password && (
               <p className="text-red-600 text-sm mt-1">{errors.password.message}</p>
@@ -82,7 +83,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-gray-800 text-white px-4 py-2.5 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
@@ -91,7 +92,7 @@ export default function LoginPage() {
         <div className="mt-6 text-center text-sm">
           <p className="text-gray-600">
             Don't have an account?{' '}
-            <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+            <Link href="/register" className="text-gray-800 hover:text-gray-900 font-medium">
               Sign up now
             </Link>
           </p>

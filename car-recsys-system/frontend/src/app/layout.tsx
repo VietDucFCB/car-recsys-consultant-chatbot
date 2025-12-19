@@ -1,11 +1,12 @@
-'use client';
-
-'use client';
-
-import Head from 'next/head';
+import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import '@/styles/globals.css';
+
+export const metadata: Metadata = {
+  title: 'CarMarket - Sàn thương mại điện tử bán xe ô tô',
+  description: 'Mua bán xe ô tô trực tuyến',
+};
 
 export default function RootLayout({
   children,
@@ -14,16 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="vi">
-      <Head>
-        <title>CarMarket - Sàn thương mại điện tử bán xe ô tô</title>
-        <meta name="description" content="Mua bán xe ô tô trực tuyến" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
       <body>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-gray-50">
           <Header />
-          <main className="flex-grow container mx-auto px-4 py-8">
+          <main className="flex-grow relative">
             {children}
           </main>
           <Footer />

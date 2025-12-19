@@ -40,14 +40,14 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-12">
-      <div className="bg-white p-8 rounded-lg shadow-md">
+    <div className="max-w-md mx-auto mt-12 px-4">
+      <div className="bg-white p-8 rounded-xl shadow-lg border border-gray-100">
         <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
           Create Account
         </h1>
 
         {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
+          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg mb-4 text-sm">
             {error}
           </div>
         )}
@@ -72,7 +72,7 @@ export default function RegisterPage() {
                   message: 'Username can only contain letters, numbers, underscores and hyphens'
                 }
               })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
             {errors.username && (
               <p className="text-red-600 text-sm mt-1">{errors.username.message}</p>
@@ -94,7 +94,7 @@ export default function RegisterPage() {
                   message: 'Invalid email address'
                 }
               })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
             {errors.email && (
               <p className="text-red-600 text-sm mt-1">{errors.email.message}</p>
@@ -109,7 +109,7 @@ export default function RegisterPage() {
               id="full_name"
               type="text"
               {...register('full_name')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
           </div>
 
@@ -121,7 +121,7 @@ export default function RegisterPage() {
               id="phone"
               type="tel"
               {...register('phone')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
           </div>
 
@@ -139,7 +139,7 @@ export default function RegisterPage() {
                   message: 'Password must be at least 6 characters'
                 }
               })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
             {errors.password && (
               <p className="text-red-600 text-sm mt-1">{errors.password.message}</p>
@@ -157,7 +157,7 @@ export default function RegisterPage() {
                 required: 'Please confirm your password',
                 validate: value => value === password || 'Passwords do not match'
               })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-colors"
             />
             {errors.confirmPassword && (
               <p className="text-red-600 text-sm mt-1">{errors.confirmPassword.message}</p>
@@ -167,7 +167,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="w-full bg-gray-800 text-white px-4 py-2.5 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
           >
             {loading ? 'Signing up...' : 'Sign Up'}
           </button>
@@ -176,7 +176,7 @@ export default function RegisterPage() {
         <div className="mt-6 text-center text-sm">
           <p className="text-gray-600">
             Already have an account?{' '}
-            <Link href="/login" className="text-primary-600 hover:text-primary-700 font-medium">
+            <Link href="/login" className="text-gray-800 hover:text-gray-900 font-medium">
               Login
             </Link>
           </p>
