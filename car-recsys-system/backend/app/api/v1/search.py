@@ -115,27 +115,32 @@ async def search_vehicles(
     
     query_sql = f"""
         SELECT 
-            vehicle_id, 
-            vehicle_url, 
-            title, 
-            price::text, 
-            brand, 
-            car_model, 
+            v.vehicle_id, 
+            v.vehicle_url, 
+            v.title, 
+            v.price::text, 
+            v.brand, 
+            v.car_model, 
             '' as year, 
-            mileage::text, 
-            fuel_type, 
-            transmission, 
+            v.mileage::text, 
+            v.fuel_type, 
+            v.transmission, 
             '' as body_type, 
-            exterior_color, 
+            v.exterior_color, 
             '' as seats, 
             '' as origin, 
             '' as location, 
             '' as description, 
-            '' as image_url, 
+            COALESCE(
+                (SELECT image_url FROM raw.vehicle_images vi 
+                 WHERE vi.vehicle_id = v.vehicle_id 
+                 ORDER BY vi.id LIMIT 1), 
+                ''
+            ) as image_url, 
             '' as seller_name, 
             '' as seller_phone, 
-            created_at::text as posted_date
-        FROM {table_name} 
+            v.created_at::text as posted_date
+        FROM {table_name} v
         WHERE {where_clause}
         ORDER BY {sort_column} {order} NULLS LAST
         LIMIT :limit OFFSET :offset

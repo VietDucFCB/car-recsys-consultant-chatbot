@@ -75,9 +75,11 @@ export default function VehicleCard({ vehicle }: VehicleCardProps) {
 
   const formatPrice = (price: number | null) => {
     if (!price) return 'Contact';
-    return new Intl.NumberFormat('vi-VN', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'VND',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(price);
   };
 
