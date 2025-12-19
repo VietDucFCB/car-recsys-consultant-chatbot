@@ -8,36 +8,36 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-lg font-semibold mb-4">Về CarMarket</h3>
+            <h3 className="text-lg font-semibold mb-4">About CarMarket</h3>
             <p className="text-gray-400 text-sm">
-              Sàn thương mại điện tử bán xe ô tô hàng đầu Việt Nam
+              Vietnam's leading online car marketplace
             </p>
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-4">Mua xe</h3>
+            <h3 className="text-lg font-semibold mb-4">Buy Cars</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/search?condition=new" className="text-gray-400 hover:text-white">Xe mới</a></li>
-              <li><a href="/search?condition=used" className="text-gray-400 hover:text-white">Xe đã qua sử dụng</a></li>
-              <li><a href="/compare" className="text-gray-400 hover:text-white">So sánh xe</a></li>
+              <li><a href="/search?condition=new" className="text-gray-400 hover:text-white">New Cars</a></li>
+              <li><a href="/search?condition=used" className="text-gray-400 hover:text-white">Used Cars</a></li>
+              <li><a href="/compare" className="text-gray-400 hover:text-white">Compare Cars</a></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-4">Hỗ trợ</h3>
+            <h3 className="text-lg font-semibold mb-4">Support</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="/help" className="text-gray-400 hover:text-white">Trợ giúp</a></li>
-              <li><a href="/contact" className="text-gray-400 hover:text-white">Liên hệ</a></li>
-              <li><a href="/terms" className="text-gray-400 hover:text-white">Điều khoản</a></li>
+              <li><a href="/help" className="text-gray-400 hover:text-white">Help</a></li>
+              <li><a href="/contact" className="text-gray-400 hover:text-white">Contact</a></li>
+              <li><a href="/terms" className="text-gray-400 hover:text-white">Terms</a></li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-4">Liên hệ</h3>
+            <h3 className="text-lg font-semibold mb-4">Contact</h3>
             <ul className="space-y-2 text-sm text-gray-400">
               <li>Email: support@carmarket.vn</li>
               <li>Hotline: 1900 xxxx</li>
-              <li>Giờ làm việc: 8:00 - 22:00</li>
+              <li>Business Hours: 8:00 AM - 10:00 PM</li>
             </ul>
           </div>
         </div>

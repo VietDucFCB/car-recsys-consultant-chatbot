@@ -51,7 +51,7 @@ export default function ComparePage() {
   };
 
   const addVehicle = () => {
-    const id = prompt('Nhập ID xe để thêm vào so sánh:');
+    const id = prompt('Enter car ID to add to comparison:');
     if (id) {
       const currentIds = searchParams.get('ids')?.split(',') || [];
       const newIds = [...currentIds, id].filter((v, i, a) => a.indexOf(v) === i);
@@ -83,15 +83,15 @@ export default function ComparePage() {
         <h1 className="text-3xl font-bold text-gray-900">⚖️ So sánh xe</h1>
         <div className="text-center py-12 bg-white rounded-lg shadow-md">
           <div className="text-6xl mb-4">🚗</div>
-          <p className="text-gray-600 text-lg mb-2">Chưa có xe để so sánh</p>
+          <p className="text-gray-600 text-lg mb-2">No cars to compare</p>
           <p className="text-gray-500 mb-6">
-            Hãy thêm xe từ trang tìm kiếm hoặc chi tiết xe
+            Add cars from search or vehicle detail pages
           </p>
           <a
             href="/search"
             className="inline-block bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 font-medium"
           >
-            Tìm kiếm xe
+            Search Cars
           </a>
         </div>
       </div>
@@ -101,13 +101,13 @@ export default function ComparePage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">⚖️ So sánh xe</h1>
+        <h1 className="text-3xl font-bold text-gray-900">⚖️ Compare Cars</h1>
         {vehicles.length < 4 && (
           <button
             onClick={addVehicle}
             className="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 font-medium"
           >
-            + Thêm xe
+            + Add Car
           </button>
         )}
       </div>
@@ -117,7 +117,7 @@ export default function ComparePage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900 sticky left-0 bg-gray-50">
-                Thuộc tính
+                Attribute
               </th>
               {vehicles.map((vehicle) => (
                 <th key={vehicle.id} className="px-6 py-3 text-center min-w-[250px]">
@@ -141,7 +141,7 @@ export default function ComparePage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Giá</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Price</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center text-primary-600 font-bold">
                   {formatPrice(vehicle.price)}
@@ -149,7 +149,7 @@ export default function ComparePage() {
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Hãng</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Brand</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">{vehicle.brand}</td>
               ))}
@@ -161,25 +161,25 @@ export default function ComparePage() {
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Năm</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Year</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">{vehicle.year}</td>
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Tình trạng</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Condition</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                     vehicle.condition === 'new' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {vehicle.condition === 'new' ? 'Mới' : 'Đã qua SD'}
+                    {vehicle.condition === 'new' ? 'New' : 'Used'}
                   </span>
                 </td>
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Số km</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Mileage</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">
                   {vehicle.mileage ? `${vehicle.mileage.toLocaleString()} km` : 'N/A'}
@@ -187,31 +187,31 @@ export default function ComparePage() {
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Hộp số</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Transmission</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">{vehicle.transmission || 'N/A'}</td>
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Nhiên liệu</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Fuel Type</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">{vehicle.fuel_type || 'N/A'}</td>
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Kiểu dáng</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Body Type</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">{vehicle.body_type || 'N/A'}</td>
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Màu sắc</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Color</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">{vehicle.color || 'N/A'}</td>
               ))}
             </tr>
             <tr>
-              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Địa điểm</td>
+              <td className="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white">Location</td>
               {vehicles.map((vehicle) => (
                 <td key={vehicle.id} className="px-6 py-4 text-center">{vehicle.location || 'N/A'}</td>
               ))}
@@ -224,7 +224,7 @@ export default function ComparePage() {
                     href={`/vehicle/${vehicle.id}`}
                     className="inline-block bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 font-medium"
                   >
-                    Xem chi tiết
+                    View Details
                   </a>
                 </td>
               ))}

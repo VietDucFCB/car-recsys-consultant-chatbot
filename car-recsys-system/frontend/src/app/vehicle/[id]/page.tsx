@@ -111,9 +111,9 @@ export default function VehicleDetailPage() {
   if (!vehicle) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600 text-lg">Không tìm thấy xe</p>
+        <p className="text-gray-600 text-lg">Vehicle not found</p>
         <Link href="/search" className="text-primary-600 hover:text-primary-700 mt-4 inline-block">
-          ← Quay lại tìm kiếm
+          ← Back to search
         </Link>
       </div>
     );
@@ -122,7 +122,7 @@ export default function VehicleDetailPage() {
   return (
     <div className="space-y-8">
       <Link href="/search" className="text-primary-600 hover:text-primary-700">
-        ← Quay lại tìm kiếm
+        ← Back to search
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -169,12 +169,12 @@ export default function VehicleDetailPage() {
             <div className="flex items-center space-x-2 mb-4">
               {vehicle.condition === 'new' && (
                 <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                  XE MỚI
+                  NEW
                 </span>
               )}
               {vehicle.condition === 'used' && (
                 <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                  ĐÃ QUA SỬ DỤNG
+                  USED
                 </span>
               )}
             </div>
@@ -188,7 +188,7 @@ export default function VehicleDetailPage() {
                 <div className="flex items-center">
                   <span className="text-2xl mr-2">🛣️</span>
                   <div>
-                    <p className="text-sm text-gray-500">Số km đã đi</p>
+                    <p className="text-sm text-gray-500">Mileage</p>
                     <p className="font-semibold">{vehicle.mileage.toLocaleString()} km</p>
                   </div>
                 </div>
@@ -197,7 +197,7 @@ export default function VehicleDetailPage() {
                 <div className="flex items-center">
                   <span className="text-2xl mr-2">⚙️</span>
                   <div>
-                    <p className="text-sm text-gray-500">Hộp số</p>
+                    <p className="text-sm text-gray-500">Transmission</p>
                     <p className="font-semibold">{vehicle.transmission}</p>
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export default function VehicleDetailPage() {
                 <div className="flex items-center">
                   <span className="text-2xl mr-2">⛽</span>
                   <div>
-                    <p className="text-sm text-gray-500">Nhiên liệu</p>
+                    <p className="text-sm text-gray-500">Fuel Type</p>
                     <p className="font-semibold">{vehicle.fuel_type}</p>
                   </div>
                 </div>
@@ -215,7 +215,7 @@ export default function VehicleDetailPage() {
                 <div className="flex items-center">
                   <span className="text-2xl mr-2">🚗</span>
                   <div>
-                    <p className="text-sm text-gray-500">Kiểu dáng</p>
+                    <p className="text-sm text-gray-500">Body Type</p>
                     <p className="font-semibold">{vehicle.body_type}</p>
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export default function VehicleDetailPage() {
                 <div className="flex items-center">
                   <span className="text-2xl mr-2">🎨</span>
                   <div>
-                    <p className="text-sm text-gray-500">Màu sắc</p>
+                    <p className="text-sm text-gray-500">Color</p>
                     <p className="font-semibold">{vehicle.color}</p>
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export default function VehicleDetailPage() {
                 <div className="flex items-center">
                   <span className="text-2xl mr-2">📍</span>
                   <div>
-                    <p className="text-sm text-gray-500">Địa điểm</p>
+                    <p className="text-sm text-gray-500">Location</p>
                     <p className="font-semibold">{vehicle.location}</p>
                   </div>
                 </div>
@@ -244,7 +244,7 @@ export default function VehicleDetailPage() {
           {/* Description */}
           {vehicle.description && (
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Mô tả</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Description</h2>
               <p className="text-gray-700 whitespace-pre-line">{vehicle.description}</p>
             </div>
           )}
@@ -254,40 +254,40 @@ export default function VehicleDetailPage() {
         <div className="space-y-6">
           {/* Seller Info */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Thông tin người bán</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Seller Information</h3>
             {vehicle.seller_name && (
               <p className="text-gray-700 mb-2">
-                <span className="font-semibold">Tên:</span> {vehicle.seller_name}
+                <span className="font-semibold">Name:</span> {vehicle.seller_name}
               </p>
             )}
             {vehicle.seller_phone && (
               <p className="text-gray-700 mb-4">
-                <span className="font-semibold">SĐT:</span> {vehicle.seller_phone}
+                <span className="font-semibold">Phone:</span> {vehicle.seller_phone}
               </p>
             )}
             <button
               onClick={handleContactClick}
               className="w-full bg-primary-600 text-white px-4 py-3 rounded-md hover:bg-primary-700 font-medium"
             >
-              📞 Liên hệ
+              📞 Contact
             </button>
           </div>
 
           {/* Actions */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Hành động</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Actions</h3>
             <div className="space-y-3">
               <Link
                 href={`/compare?ids=${vehicle.id}`}
                 className="block w-full bg-gray-100 text-gray-700 px-4 py-3 rounded-md hover:bg-gray-200 text-center font-medium"
               >
-                ⚖️ So sánh với xe khác
+                ⚖️ Compare with others
               </Link>
               <button
                 onClick={handleFavoriteClick}
                 className="w-full bg-gray-100 text-gray-700 px-4 py-3 rounded-md hover:bg-gray-200 font-medium"
               >
-                {favorite ? '❤️ Đã yêu thích' : '🤍 Thêm vào yêu thích'}
+                {favorite ? '❤️ Favorited' : '🤍 Add to favorites'}
               </button>
             </div>
           </div>
@@ -298,7 +298,7 @@ export default function VehicleDetailPage() {
       {similarVehicles && similarVehicles.length > 0 && (
         <section>
           <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            🔍 Xe tương tự
+            🔍 Similar Vehicles
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {similarVehicles.map((reco) => (

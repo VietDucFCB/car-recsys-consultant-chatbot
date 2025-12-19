@@ -16,6 +16,7 @@ router = APIRouter()
 @router.get("/search", response_model=VehicleSearchResponse)
 async def search_vehicles(
     query: Optional[str] = Query(None, description="Search query for title, brand, model"),
+    condition: Optional[str] = Query(None, description="Vehicle condition: used or new"),
     brand: Optional[str] = Query(None),
     model: Optional[str] = Query(None),
     year_min: Optional[int] = Query(None),
@@ -36,6 +37,9 @@ async def search_vehicles(
     """
     Search vehicles with filters using raw SQL for reliability
     """
+    # Determine which table to query based on condition
+    table_name = "raw.new_vehicles" if condition and condition.lower() == "new" else "raw.used_vehicles"
+    
     # Build WHERE conditions
     conditions = []
     params = {}
@@ -91,16 +95,15 @@ async def search_vehicles(
     where_clause = " AND ".join(conditions) if conditions else "1=1"
     
     # Get total count
-    count_sql = f"SELECT COUNT(*) FROM raw.used_vehicles WHERE {where_clause}"
+    count_sql = f"SELECT COUNT(*) FROM {table_name} WHERE {where_clause}"
     total = db.execute(text(count_sql), params).scalar()
     
     # Build ORDER BY
     # Map id to vehicle_id since that's the actual column name
     sort_column_map = {
         'id': 'vehicle_id',
-        'price': 'CAST(NULLIF(REGEXP_REPLACE(price, \'[^0-9]\', \'\', \'g\'), \'\') AS BIGINT)',
-        'year': 'CAST(year AS INTEGER)',
-        'mileage': 'CAST(NULLIF(REGEXP_REPLACE(mileage, \'[^0-9]\', \'\', \'g\'), \'\') AS BIGINT)'
+        'price': 'price',
+        'mileage': 'mileage'
     }
     sort_column = sort_column_map.get(sort_by, 'vehicle_id')
     order = 'ASC' if sort_order.lower() == 'asc' else 'DESC'
@@ -111,12 +114,30 @@ async def search_vehicles(
     params['offset'] = offset
     
     query_sql = f"""
-        SELECT vehicle_id, url, title, price, brand, model, year, mileage, 
-               fuel_type, transmission, body_type, color, seats, origin, 
-               location, description, image_url, seller_name, seller_phone, posted_date
-        FROM raw.used_vehicles 
+        SELECT 
+            vehicle_id, 
+            vehicle_url, 
+            title, 
+            price::text, 
+            brand, 
+            car_model, 
+            '' as year, 
+            mileage::text, 
+            fuel_type, 
+            transmission, 
+            '' as body_type, 
+            exterior_color, 
+            '' as seats, 
+            '' as origin, 
+            '' as location, 
+            '' as description, 
+            '' as image_url, 
+            '' as seller_name, 
+            '' as seller_phone, 
+            created_at::text as posted_date
+        FROM {table_name} 
         WHERE {where_clause}
-        ORDER BY {sort_column} {order}
+        ORDER BY {sort_column} {order} NULLS LAST
         LIMIT :limit OFFSET :offset
     """
     

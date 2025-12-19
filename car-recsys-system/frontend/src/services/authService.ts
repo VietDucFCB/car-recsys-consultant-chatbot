@@ -3,15 +3,7 @@ import { AuthResponse, LoginRequest, RegisterRequest, User } from '@/types';
 
 export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const formData = new URLSearchParams();
-    formData.append('username', data.email);
-    formData.append('password', data.password);
-
-    const response = await api.post<AuthResponse>('/auth/login', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
+    const response = await api.post<AuthResponse>('/auth/login', data);
     return response.data;
   },
 
@@ -26,7 +18,9 @@ export const authService = {
   },
 
   logout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user');
+    }
   },
 };

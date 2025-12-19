@@ -7,25 +7,25 @@ from datetime import datetime
 
 
 class VehicleResponse(BaseModel):
-    id: int
+    id: str  # vehicle_id is TEXT (VIN)
     title: str
-    price: Optional[float] = None
+    price: Optional[str] = None  # NUMERIC converted to text
     brand: Optional[str] = None
     model: Optional[str] = None
-    year: Optional[int] = None
-    mileage: Optional[float] = None
+    year: Optional[str] = None  # Not in DB, using empty string
+    mileage: Optional[str] = None  # BIGINT converted to text
     fuel_type: Optional[str] = None
     transmission: Optional[str] = None
     body_type: Optional[str] = None
     color: Optional[str] = None
-    seats: Optional[int] = None
+    seats: Optional[str] = None  # Not in DB, using empty string
     origin: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
     seller_name: Optional[str] = None
     seller_phone: Optional[str] = None
-    posted_date: Optional[datetime] = None
+    posted_date: Optional[str] = None  # created_at converted to text
     url: Optional[str] = None
 
     class Config:

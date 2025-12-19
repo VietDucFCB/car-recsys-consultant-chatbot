@@ -8,11 +8,12 @@ import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
 
 interface RegisterForm {
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;
   full_name?: string;
-  phone_number?: string;
+  phone?: string;
 }
 
 export default function RegisterPage() {
@@ -32,7 +33,7 @@ export default function RegisterPage() {
       setAuth(response.user, response.access_token);
       router.push('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Đăng ký thất bại. Vui lòng thử lại.');
+      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export default function RegisterPage() {
     <div className="max-w-md mx-auto mt-12">
       <div className="bg-white p-8 rounded-lg shadow-md">
         <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-          Đăng ký tài khoản
+          Create Account
         </h1>
 
         {error && (
@@ -53,17 +54,44 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+              Username *
+            </label>
+            <input
+              id="username"
+              type="text"
+              placeholder="Choose your username"
+              {...register('username', { 
+                required: 'Username is required',
+                minLength: {
+                  value: 3,
+                  message: 'Username must be at least 3 characters'
+                },
+                pattern: {
+                  value: /^[a-zA-Z0-9_-]+$/,
+                  message: 'Username can only contain letters, numbers, underscores and hyphens'
+                }
+              })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+            {errors.username && (
+              <p className="text-red-600 text-sm mt-1">{errors.username.message}</p>
+            )}
+          </div>
+
+          <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Email *
             </label>
             <input
               id="email"
               type="email"
+              placeholder="example@gmail.com"
               {...register('email', { 
-                required: 'Email là bắt buộc',
+                required: 'Email is required',
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Email không hợp lệ'
+                  message: 'Invalid email address'
                 }
               })}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -75,7 +103,7 @@ export default function RegisterPage() {
 
           <div>
             <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
-              Họ và tên
+              Full Name
             </label>
             <input
               id="full_name"
@@ -86,29 +114,29 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-1">
-              Số điện thoại
+            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+              Phone Number
             </label>
             <input
-              id="phone_number"
+              id="phone"
               type="tel"
-              {...register('phone_number')}
+              {...register('phone')}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Mật khẩu *
+              Password *
             </label>
             <input
               id="password"
               type="password"
               {...register('password', { 
-                required: 'Mật khẩu là bắt buộc',
+                required: 'Password is required',
                 minLength: {
                   value: 6,
-                  message: 'Mật khẩu phải có ít nhất 6 ký tự'
+                  message: 'Password must be at least 6 characters'
                 }
               })}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -120,14 +148,14 @@ export default function RegisterPage() {
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-              Xác nhận mật khẩu *
+              Confirm Password *
             </label>
             <input
               id="confirmPassword"
               type="password"
               {...register('confirmPassword', { 
-                required: 'Vui lòng xác nhận mật khẩu',
-                validate: value => value === password || 'Mật khẩu không khớp'
+                required: 'Please confirm your password',
+                validate: value => value === password || 'Passwords do not match'
               })}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
@@ -141,15 +169,15 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {loading ? 'Đang đăng ký...' : 'Đăng ký'}
+            {loading ? 'Signing up...' : 'Sign Up'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm">
           <p className="text-gray-600">
-            Đã có tài khoản?{' '}
+            Already have an account?{' '}
             <Link href="/login" className="text-primary-600 hover:text-primary-700 font-medium">
-              Đăng nhập
+              Login
             </Link>
           </p>
         </div>

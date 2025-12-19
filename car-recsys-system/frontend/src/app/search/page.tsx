@@ -54,7 +54,7 @@ export default function SearchPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-900">Tìm kiếm xe</h1>
+      <h1 className="text-3xl font-bold text-gray-900">Search Cars</h1>
 
       <SearchBar onSearch={handleSearch} initialFilters={filters} />
 
@@ -66,20 +66,20 @@ export default function SearchPage() {
         <>
           <div className="flex items-center justify-between">
             <p className="text-gray-600">
-              Tìm thấy <span className="font-bold">{searchResult.total}</span> kết quả
+              Found <span className="font-bold">{searchResult.total}</span> results
             </p>
             <select
               value={filters.sort || ''}
               onChange={(e) => handleSearch({ ...filters, sort: e.target.value })}
               className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="">Sắp xếp</option>
-              <option value="price">Giá: Thấp đến cao</option>
-              <option value="-price">Giá: Cao đến thấp</option>
-              <option value="year">Năm: Cũ đến mới</option>
-              <option value="-year">Năm: Mới đến cũ</option>
-              <option value="mileage">Km: Ít đến nhiều</option>
-              <option value="-mileage">Km: Nhiều đến ít</option>
+              <option value="">Sort by</option>
+              <option value="price">Price: Low to High</option>
+              <option value="-price">Price: High to Low</option>
+              <option value="year">Year: Old to New</option>
+              <option value="-year">Year: New to Old</option>
+              <option value="mileage">Mileage: Low to High</option>
+              <option value="-mileage">Mileage: High to Low</option>
             </select>
           </div>
 
@@ -99,25 +99,25 @@ export default function SearchPage() {
                     disabled={!filters.page || filters.page === 1}
                     className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    ← Trước
+                    ← Previous
                   </button>
                   <span className="text-gray-600">
-                    Trang {filters.page || 1} / {Math.ceil(searchResult.total / searchResult.limit)}
+                    Page {filters.page || 1} / {Math.ceil(searchResult.total / searchResult.limit)}
                   </span>
                   <button
                     onClick={() => handlePageChange((filters.page || 1) + 1)}
                     disabled={(filters.page || 1) >= Math.ceil(searchResult.total / searchResult.limit)}
                     className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Sau →
+                    Next →
                   </button>
                 </div>
               )}
             </>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">Không tìm thấy kết quả phù hợp</p>
-              <p className="text-gray-500 mt-2">Hãy thử thay đổi bộ lọc tìm kiếm</p>
+              <p className="text-gray-600 text-lg">No results found</p>
+              <p className="text-gray-500 mt-2">Try changing your search filters</p>
             </div>
           )}
         </>

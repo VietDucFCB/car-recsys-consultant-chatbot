@@ -12,7 +12,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -25,10 +25,14 @@ export const useAuthStore = create<AuthState>()(
       },
       clearAuth: () => {
         if (typeof window !== 'undefined') {
+          // Clear all auth-related items
           localStorage.removeItem('access_token');
           localStorage.removeItem('user');
+          localStorage.removeItem('auth-storage');
+          // Clear persist storage
+          sessionStorage.removeItem('auth-storage');
         }
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false }, true);
       },
     }),
     {
@@ -40,6 +44,12 @@ export const useAuthStore = create<AuthState>()(
           removeItem: () => {}
         }
       ),
+      // Only persist if user is authenticated
+      partialize: (state) => ({
+        user: state.isAuthenticated ? state.user : null,
+        token: state.isAuthenticated ? state.token : null,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

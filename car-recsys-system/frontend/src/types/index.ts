@@ -1,9 +1,13 @@
 export interface User {
   id: string;
+  username: string;
   email: string;
   full_name: string | null;
-  phone_number: string | null;
+  phone: string | null;
+  is_active: boolean;
+  is_verified: boolean;
   created_at: string;
+  updated_at: string | null;
 }
 
 export interface Vehicle {
@@ -57,15 +61,16 @@ export interface SearchResponse {
 }
 
 export interface LoginRequest {
-  email: string;
+  username: string;  // Can be username or email
   password: string;
 }
 
 export interface RegisterRequest {
+  username: string;
   email: string;
   password: string;
   full_name?: string;
-  phone_number?: string;
+  phone?: string;
 }
 
 export interface AuthResponse {

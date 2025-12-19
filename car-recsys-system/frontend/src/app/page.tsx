@@ -79,16 +79,20 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-12 pb-12">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-800 text-white rounded-lg p-8 md:p-12">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-          Tìm chiếc xe ô tô hoàn hảo của bạn
-        </h1>
-        <p className="text-xl mb-8">
-          Hàng nghìn xe mới và đã qua sử dụng đang chờ bạn khám phá
-        </p>
-        <SearchBar onSearch={handleSearch} />
+      <section className="bg-gradient-to-br from-indigo-600 via-purple-600 to-primary-700 text-white rounded-2xl p-8 md:p-16 shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-5 rounded-full -mr-48 -mt-48"></div>
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-white opacity-5 rounded-full -ml-36 -mb-36"></div>
+        <div className="relative z-10">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight">
+            Find Your Perfect Car
+          </h1>
+          <p className="text-xl md:text-2xl mb-8 text-indigo-100">
+            Thousands of new and used cars waiting for you to discover
+          </p>
+          <SearchBar onSearch={handleSearch} />
+        </div>
       </section>
 
       {/* Personalized Recommendations */}
@@ -96,10 +100,10 @@ export default function HomePage() {
         <section>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-3xl font-bold text-gray-900">
-              🎯 Gợi ý dành cho bạn
+              🎯 Recommendations for You
             </h2>
             <Link href="/recommendations" className="text-primary-600 hover:text-primary-700 font-medium">
-              Xem tất cả →
+              View all →
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -114,10 +118,10 @@ export default function HomePage() {
       <section>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-bold text-gray-900">
-            ⭐ Xe nổi bật
+            ⭐ Featured Vehicles
           </h2>
           <Link href="/search" className="text-primary-600 hover:text-primary-700 font-medium">
-            Xem tất cả →
+            View all →
           </Link>
         </div>
         {loading ? (
@@ -132,7 +136,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-600">Không có xe nào</p>
+            <p className="text-gray-600">No vehicles available</p>
           </div>
         )}
       </section>
@@ -140,16 +144,16 @@ export default function HomePage() {
       {/* Quick Categories */}
       <section>
         <h2 className="text-3xl font-bold text-gray-900 mb-6">
-          🚙 Danh mục phổ biến
+          🚙 Popular Categories
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link href="/search?condition=new" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg text-center">
             <div className="text-4xl mb-2">🆕</div>
-            <h3 className="font-semibold">Xe mới</h3>
+            <h3 className="font-semibold">New Cars</h3>
           </Link>
           <Link href="/search?condition=used" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg text-center">
             <div className="text-4xl mb-2">🚗</div>
-            <h3 className="font-semibold">Xe đã qua sử dụng</h3>
+            <h3 className="font-semibold">Used Cars</h3>
           </Link>
           <Link href="/search?body_type=SUV" className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg text-center">
             <div className="text-4xl mb-2">🚙</div>
@@ -166,13 +170,13 @@ export default function HomePage() {
       {!isAuthenticated && (
         <section className="bg-gray-100 rounded-lg p-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Đăng ký ngay để nhận gợi ý xe phù hợp
+            Sign up now to get personalized car recommendations
           </h2>
           <p className="text-gray-600 mb-6">
-            Hệ thống AI của chúng tôi sẽ đề xuất những chiếc xe phù hợp nhất với nhu cầu của bạn
+            Our AI system will suggest the most suitable cars for your needs
           </p>
           <Link href="/register" className="inline-block bg-primary-600 text-white px-8 py-3 rounded-md hover:bg-primary-700 font-medium">
-            Đăng ký miễn phí
+            Sign Up Free
           </Link>
         </section>
       )}

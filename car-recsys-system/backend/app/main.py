@@ -9,7 +9,7 @@ import time
 import logging
 
 from app.core.config import settings
-from app.api.v1 import auth, search, listings, recommendations, feedback
+from app.api.v1 import auth, search, listings, recommendations, feedback, interactions
 
 # Configure logging
 logging.basicConfig(
@@ -89,6 +89,7 @@ async def root():
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(interactions.router, prefix="/api/v1/interactions", tags=["User Tracking"])
 app.include_router(search.router, prefix="/api/v1", tags=["Search"])
 app.include_router(listings.router, prefix="/api/v1", tags=["Listings"])
 app.include_router(recommendations.router, prefix="/api/v1/reco", tags=["Recommendations"])

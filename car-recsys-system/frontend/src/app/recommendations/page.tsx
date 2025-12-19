@@ -44,10 +44,10 @@ export default function RecommendationsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          🎯 Gợi ý xe dành cho bạn
+          🎯 Car Recommendations for You
         </h1>
         <p className="text-gray-600 mb-6">
-          Dựa trên lịch sử tìm kiếm và sở thích của bạn
+          Based on your search history and preferences
         </p>
 
         <div className="flex space-x-4">
@@ -59,7 +59,7 @@ export default function RecommendationsPage() {
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            Gợi ý thông minh
+            Smart Recommendations
           </button>
           <button
             onClick={() => setMode('candidate')}
@@ -69,7 +69,7 @@ export default function RecommendationsPage() {
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            Phổ biến
+            Popular
           </button>
         </div>
       </div>
@@ -94,15 +94,15 @@ export default function RecommendationsPage() {
       ) : (
         <div className="text-center py-12 bg-white rounded-lg shadow-md">
           <div className="text-6xl mb-4">🤔</div>
-          <p className="text-gray-600 text-lg mb-2">Chưa có gợi ý</p>
+          <p className="text-gray-600 text-lg mb-2">No recommendations yet</p>
           <p className="text-gray-500 mb-6">
-            Hãy tìm kiếm và xem một số xe để chúng tôi có thể đưa ra gợi ý phù hợp hơn
+            Search and view some cars so we can give you better recommendations
           </p>
           <a
             href="/search"
             className="inline-block bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 font-medium"
           >
-            Khám phá xe ngay
+            Explore Cars
           </a>
         </div>
       )}

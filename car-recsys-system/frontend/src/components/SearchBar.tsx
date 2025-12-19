@@ -26,7 +26,7 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <input
           type="text"
-          placeholder="Tìm kiếm xe..."
+          placeholder="Search cars..."
           value={filters.q || ''}
           onChange={(e) => handleChange('q', e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -37,7 +37,7 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
           onChange={(e) => handleChange('brand', e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Tất cả hãng</option>
+          <option value="">All Brands</option>
           <option value="Toyota">Toyota</option>
           <option value="Honda">Honda</option>
           <option value="Mazda">Mazda</option>
@@ -52,9 +52,9 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
           onChange={(e) => handleChange('condition', e.target.value)}
           className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Tình trạng</option>
-          <option value="new">Xe mới</option>
-          <option value="used">Xe đã qua sử dụng</option>
+          <option value="">Condition</option>
+          <option value="new">New</option>
+          <option value="used">Used</option>
         </select>
       </div>
 
@@ -63,16 +63,16 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
         onClick={() => setShowAdvanced(!showAdvanced)}
         className="mt-4 text-primary-600 hover:text-primary-700 text-sm font-medium"
       >
-        {showAdvanced ? '▲ Ẩn bộ lọc nâng cao' : '▼ Hiện bộ lọc nâng cao'}
+        {showAdvanced ? '▲ Hide Advanced Filters' : '▼ Show Advanced Filters'}
       </button>
 
       {showAdvanced && (
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Giá tối thiểu</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
             <input
               type="number"
-              placeholder="VNĐ"
+              placeholder="VND"
               value={filters.price_min || ''}
               onChange={(e) => handleChange('price_min', e.target.value ? parseInt(e.target.value) : undefined)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -80,10 +80,10 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Giá tối đa</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
             <input
               type="number"
-              placeholder="VNĐ"
+              placeholder="VND"
               value={filters.price_max || ''}
               onChange={(e) => handleChange('price_max', e.target.value ? parseInt(e.target.value) : undefined)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -91,7 +91,7 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Năm tối thiểu</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Min Year</label>
             <input
               type="number"
               placeholder="2000"
@@ -102,7 +102,7 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Năm tối đa</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max Year</label>
             <input
               type="number"
               placeholder="2024"
@@ -117,11 +117,11 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
             onChange={(e) => handleChange('fuel_type', e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="">Loại nhiên liệu</option>
-            <option value="Xăng">Xăng</option>
-            <option value="Dầu diesel">Dầu diesel</option>
+            <option value="">Fuel Type</option>
+            <option value="Xăng">Gasoline</option>
+            <option value="Dầu diesel">Diesel</option>
             <option value="Hybrid">Hybrid</option>
-            <option value="Điện">Điện</option>
+            <option value="Điện">Electric</option>
           </select>
           
           <select
@@ -129,9 +129,9 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
             onChange={(e) => handleChange('transmission', e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="">Hộp số</option>
-            <option value="Số tự động">Số tự động</option>
-            <option value="Số sàn">Số sàn</option>
+            <option value="">Transmission</option>
+            <option value="Số tự động">Automatic</option>
+            <option value="Số sàn">Manual</option>
           </select>
           
           <select
@@ -139,16 +139,16 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
             onChange={(e) => handleChange('body_type', e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="">Kiểu dáng</option>
+            <option value="">Body Type</option>
             <option value="Sedan">Sedan</option>
             <option value="SUV">SUV</option>
             <option value="Hatchback">Hatchback</option>
             <option value="MPV">MPV</option>
-            <option value="Bán tải">Bán tải</option>
+            <option value="Bán tải">Pickup</option>
           </select>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Km tối đa</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Max Mileage (km)</label>
             <input
               type="number"
               placeholder="100000"
@@ -165,7 +165,7 @@ export default function SearchBar({ onSearch, initialFilters = {} }: SearchBarPr
           type="submit"
           className="w-full bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 font-medium"
         >
-          🔍 Tìm kiếm
+          🔍 Search
         </button>
       </div>
     </form>

@@ -23,6 +23,41 @@ services:
       timeout: 5s
       retries: 5
 
+  # PostgREST - Auto REST API from PostgreSQL
+  postgrest:
+    image: postgrest/postgrest:latest
+    container_name: car-recsys-postgrest
+    ports:
+      - "3001:3000"
+    environment:
+      PGRST_DB_URI: postgres://admin:admin123@postgres:5432/car_recsys
+      PGRST_DB_SCHEMAS: raw,silver,gold
+      PGRST_DB_ANON_ROLE: admin
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3001
+      PGRST_SERVER_CORS_ALLOWED_ORIGINS: "*"
+    depends_on:
+      - postgres
+    networks:
+      - car-recsys-network
+    restart: unless-stopped
+
+  # Bytebase - Database Schema Migration & Version Control
+  bytebase:
+    image: bytebase/bytebase:latest
+    container_name: car-recsys-bytebase
+    ports:
+      - "8080:8080"
+    environment:
+      - PG_URL=postgresql://admin:admin123@postgres:5432/car_recsys
+    volumes:
+      - bytebase_data:/var/opt/bytebase
+    depends_on:
+      - postgres
+    networks:
+      - car-recsys-network
+    restart: unless-stopped
+    command: --data /var/opt/bytebase --port 8080
+
   # Elasticsearch - Search Engine
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -157,3 +192,4 @@ volumes:
   elasticsearch_data:
   qdrant_data:
   redis_data:
+  bytebase_data:

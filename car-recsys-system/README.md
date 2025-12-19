@@ -1,303 +1,286 @@
-# Car Recommendation System
+# 🚗 Car Recommendation System - Complete Setup Guide
 
-A comprehensive car recommendation system with authentication, user behavior tracking, and hybrid recommendation engine.
+## 📋 Yêu cầu hệ thống
 
-## Architecture
+- **Docker** & **Docker Compose** (phiên bản mới nhất)
+- **Python 3.8+** (để chạy script load data)
+- **8GB RAM** trở lên (khuyến nghị)
+- **10GB dung lượng trống**
 
-```
-┌─────────────┐      ┌──────────────┐      ┌─────────────┐
-│  Next.js    │─────▶│   FastAPI    │─────▶│ PostgreSQL  │
-│  Frontend   │      │   Backend    │      │ (Raw/Silver │
-│   (3000)    │      │   (8000)     │      │    /Gold)   │
-└─────────────┘      │              │      └─────────────┘
-                     │              │
-                     │              │──────▶┌─────────────┐
-                     │              │       │Elasticsearch│
-                     │              │       │   (Search)  │
-                     │              │       │   (9200)    │
-                     │              │       └─────────────┘
-                     │              │
-                     │              │──────▶┌─────────────┐
-                     │              │       │   Qdrant    │
-                     │              │       │  (Vectors)  │
-                     │              │       │   (6333)    │
-                     │              │       └─────────────┘
-                     │              │
-                     └──────────────┘──────▶┌─────────────┐
-                                            │    Redis    │
-                                            │ (Cache/RL)  │
-                                            │   (6379)    │
-                                            └─────────────┘
-```
+## 🚀 Cài đặt nhanh (1 lệnh)
 
-## Features
-
-### ✅ Frontend (Next.js)
-- **E-commerce UI**: Homepage, search, detail, compare, favorites
-- **Authentication**: Login/register with JWT
-- **Responsive design**: Mobile, tablet, desktop
-- **User tracking**: Views, clicks, favorites, comparisons
-- **Recommendation UI**: Personalized suggestions with explanations
-
-### ✅ Data Platform
-- **3-layer architecture**: Raw → Silver → Gold
-- **Schema design**: Normalized tables with proper relationships
-- **Data lineage tracking**: Full audit trail
-- **Data quality checks**: Automated validation and monitoring
-
-### ✅ Search & Discovery
-- **Full-text search**: Elasticsearch with facets and filters
-- **Vector search**: Semantic search using embeddings (Qdrant)
-- **Hybrid search**: Combines text + vector + user context
-
-### ✅ Authentication & Tracking
-- **JWT authentication**: Secure user sessions
-- **User profiles**: Preferences and favorites
-- **Interaction tracking**: Views, clicks, searches, favorites
-- **Session management**: Anonymous + authenticated users
-
-### ✅ Recommendation Engine
-- **Content-based**: Feature similarity (price, brand, specs)
-- **Collaborative**: User behavior patterns
-- **Dense retrieval**: Embedding-based candidate generation
-- **Cross-encoder reranking**: Top-K refinement with explanations
-- **Hybrid scoring**: Weighted combination of multiple signals
-
-## Quick Start
-
-### Prerequisites
-- Docker & Docker Compose
-- 8GB+ RAM recommended
-- CSV datasets in `datasets/` folder
-
-### Installation
-
-1. **Clone and setup**:
 ```bash
-cd "Car Recsys Consultant Chatbot/car-recsys-system"
+chmod +x setup.sh && ./setup.sh
 ```
 
-2. **Prepare datasets**:
+Script sẽ tự động:
+1. ✅ Kiểm tra Docker đã cài đặt chưa
+2. ✅ Cài đặt Python dependencies (pandas, psycopg2-binary)
+3. ✅ Khởi động PostgreSQL, PostgREST, Bytebase
+4. ✅ Tạo database schemas
+5. ✅ Load ~720,000 dòng dữ liệu từ CSV
+6. ✅ Verify data integrity
+
+**Thời gian cài đặt:** ~5-10 phút (tùy tốc độ mạng & máy)
+
+---
+
+## 📦 Cài đặt thủ công (từng bước)
+
+### Bước 1: Clone repository
+
 ```bash
-# Copy your CSV files to datasets/ folder
-cp ../datasets/*.csv ./datasets/
+git clone https://github.com/VietDucFCB/car-recsys-consultant-chatbot.git
+cd car-recsys-consultant-chatbot/car-recsys-system
 ```
 
-3. **Start services**:
+### Bước 2: Chuẩn bị môi trường
+
 ```bash
-docker-compose up -d
+# Cài đặt Python dependencies
+pip install pandas psycopg2-binary
+
+# Cấp quyền thực thi cho scripts
+chmod +x setup.sh reset_database.sh
 ```
 
-4. **Wait for services to be healthy**:
+### Bước 3: Khởi động hệ thống
+
+```bash
+# Khởi động containers (PostgreSQL + PostgREST + Bytebase)
+docker-compose up -d postgres postgrest bytebase
+
+# Đợi 20 giây để PostgreSQL khởi động hoàn toàn
+sleep 20
+```
+
+### Bước 4: Tạo database schema
+
+```bash
+# Tạo schemas và tables
+docker-compose exec -T postgres psql -U admin -d car_recsys < database/init/01-init-bytebase.sql
+docker-compose exec -T postgres psql -U admin -d car_recsys < database/init/02-create-schema.sql
+docker-compose exec -T postgres psql -U admin -d car_recsys < database/init/04-create-all-tables.sql
+```
+
+### Bước 5: Load dữ liệu
+
+```bash
+# Load ~720k dòng dữ liệu từ 7 file CSV
+python3 load_complete_database.py
+```
+
+**Output mong đợi:**
+```
+✅ used_vehicles                    :       5,508 rows  (Xe đã qua sử dụng)
+✅ new_vehicles                     :       2,660 rows  (Xe mới)
+✅ sellers                          :       2,862 rows  (Đại lý/Người bán)
+✅ reviews_ratings                  :     347,378 rows  (Đánh giá)
+✅ vehicle_features                 :      93,331 rows  (Tính năng)
+✅ vehicle_images                   :     259,124 rows  (Hình ảnh)
+✅ seller_vehicle_relationships     :       9,027 rows  (Quan hệ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   TỔNG CỘNG                        :     719,890 rows
+```
+
+### Bước 6: Kiểm tra hệ thống
+
+```bash
+python3 check_db_status.py
+```
+
+---
+
+## 🔗 Truy cập Services
+
+Sau khi cài đặt xong, bạn có thể truy cập:
+
+### 1. **PostgREST API** (Auto-generated REST API)
+- **URL:** http://localhost:3001
+- **OpenAPI Docs:** http://localhost:3001/
+- **Example:**
+  ```bash
+  # Lấy 5 xe
+  curl "http://localhost:3001/used_vehicles?limit=5"
+  
+  # Filter theo brand
+  curl "http://localhost:3001/used_vehicles?brand=eq.Toyota&limit=10"
+  
+  # Select specific columns
+  curl "http://localhost:3001/used_vehicles?select=vehicle_id,title,price,brand&limit=5"
+  ```
+
+### 2. **Bytebase** (Database Management UI)
+- **URL:** http://localhost:8080
+- **Setup:**
+  1. Tạo admin account khi lần đầu truy cập
+  2. Add Instance với thông tin:
+     - **Host:** `postgres` (tên container)
+     - **Port:** `5432`
+     - **Database:** `car_recsys`
+     - **Username:** `bytebase_admin`
+     - **Password:** `bytebase123`
+
+### 3. **PostgreSQL** (Direct Access)
+```bash
+# Truy cập qua psql
+docker-compose exec postgres psql -U admin -d car_recsys
+
+# Hoặc qua host
+psql -h localhost -U admin -d car_recsys
+# Password: admin123
+```
+
+---
+
+## 📊 Database Schema
+
+### Raw Layer (7 bảng)
+
+1. **used_vehicles** - Xe đã qua sử dụng (38 cột)
+2. **new_vehicles** - Xe mới (38 cột)
+3. **sellers** - Thông tin đại lý (22 cột)
+4. **reviews_ratings** - Đánh giá khách hàng (17 cột)
+5. **vehicle_features** - Tính năng chi tiết (6 cột)
+6. **vehicle_images** - Hình ảnh xe (7 cột)
+7. **seller_vehicle_relationships** - Liên kết seller-vehicle (9 cột)
+
+### Gold Layer (4 bảng)
+
+1. **users** - Người dùng hệ thống
+2. **user_interactions** - Lịch sử tương tác
+3. **user_favorites** - Xe yêu thích
+4. **user_searches** - Lịch sử tìm kiếm
+
+---
+
+## 🛠️ Lệnh hữu ích
+
+### Kiểm tra trạng thái containers
 ```bash
 docker-compose ps
 ```
 
-5. **Run ETL pipeline** (loads data into database):
+### Xem logs
 ```bash
-docker-compose run etl-worker python -m app.pipeline.load_csv
-docker-compose run etl-worker python -m app.pipeline.raw_to_silver
-docker-compose run etl-worker python -m app.pipeline.silver_to_gold
+# Postgres logs
+docker-compose logs postgres
+
+# PostgREST logs
+docker-compose logs postgrest
+
+# Bytebase logs
+docker-compose logs bytebase
 ```
 
-6. **Sync to search & vector stores**:
+### Stop hệ thống
 ```bash
-docker-compose run etl-worker python -m app.pipeline.sync_elasticsearch
-docker-compose run etl-worker python -m app.pipeline.sync_qdrant
+docker-compose down
 ```
 
-7. **Access services**:
-- **Frontend**: http://localhost:3000
-- **API Documentation**: http://localhost:8000/docs
-- **Elasticsearch**: http://localhost:9200
-- **Qdrant Dashboard**: http://localhost:6333/dashboard
+### Reset database (xóa toàn bộ và load lại)
+```bash
+./reset_database.sh
+```
 
-## Frontend Pages
+### Backup database
+```bash
+docker-compose exec postgres pg_dump -U admin car_recsys > backup.sql
+```
 
-### Public Pages
-- **Homepage** (`/`): Hero, featured vehicles, categories, recommendations
-- **Search** (`/search`): Advanced filters, grid view, pagination, sorting
-- **Vehicle Detail** (`/vehicle/[id]`): Full specs, seller info, similar vehicles
-- **Login** (`/login`): Email/password authentication
-- **Register** (`/register`): New user registration
+### Restore database
+```bash
+docker-compose exec -T postgres psql -U admin -d car_recsys < backup.sql
+```
 
-### Protected Pages (Require Login)
-- **Favorites** (`/favorites`): Saved vehicles
-- **Recommendations** (`/recommendations`): Personalized suggestions (hybrid & popular)
-- **Compare** (`/compare`): Side-by-side comparison (up to 4 vehicles)
+---
 
-## API Endpoints
+## 🐛 Troubleshooting
 
-### Authentication
-- `POST /auth/register` - Register new user
-- `POST /auth/login` - Login and get JWT token
-- `GET /auth/me` - Get current user profile
+### Lỗi: "Port 5432 already in use"
+```bash
+# Kiểm tra process đang dùng port 5432
+sudo lsof -i :5432
 
-### Search & Discovery
-- `GET /search` - Search vehicles with filters
-- `GET /listing/{vehicle_id}` - Get vehicle details
-- `POST /compare` - Compare multiple vehicles
+# Hoặc dùng port khác trong docker-compose.yml
+ports:
+  - "5433:5432"  # Thay 5432 -> 5433
+```
 
-### Recommendations
-- `GET /reco/candidate` - Get recommendation candidates
-- `GET /reco/hybrid` - Hybrid recommendations with explanations
-- `GET /reco/similar/{vehicle_id}` - Similar vehicles
+### Lỗi: "Connection refused"
+```bash
+# Đợi Postgres khởi động hoàn toàn
+docker-compose logs postgres | grep "ready to accept connections"
 
-### User Interactions
-- `POST /feedback` - Submit user interaction
-- `GET /favorites` - Get user favorites
-- `POST /favorites/{vehicle_id}` - Add to favorites
-- `DELETE /favorites/{vehicle_id}` - Remove from favorites
+# Nếu không thấy, restart container
+docker-compose restart postgres
+```
 
-## Project Structure
+### Lỗi: Load data thất bại
+```bash
+# Xóa và load lại
+./reset_database.sh
+```
+
+### Kiểm tra dung lượng disk
+```bash
+# Kiểm tra volumes
+docker system df -v
+
+# Dọn dẹp (cẩn thận!)
+docker system prune -a --volumes
+```
+
+---
+
+## 📁 Cấu trúc thư mục
 
 ```
 car-recsys-system/
-├── docker-compose.yml           # Infrastructure setup
 ├── database/
 │   └── init/
-│       └── 01_create_schemas.sql # Database schema
-├── backend/                     # FastAPI application
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       ├── main.py             # Application entry
-│       ├── api/                # API endpoints
-│       ├── core/               # Config, security
-│       ├── models/             # Pydantic models
-│       ├── services/           # Business logic
-│       └── recommender/        # Recommendation engine
-├── etl/                        # Data pipeline
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       └── pipeline/           # ETL jobs
-└── datasets/                   # CSV data files
+│       ├── 01-init-bytebase.sql      # Tạo user cho Bytebase
+│       ├── 02-create-schema.sql      # Schema chính
+│       └── 04-create-all-tables.sql  # Tất cả tables
+├── datasets/                          # 7 file CSV (~500MB)
+│   ├── used_vehicles.csv
+│   ├── new_vehicles.csv
+│   ├── sellers.csv
+│   ├── reviews_ratings.csv
+│   ├── vehicle_features.csv
+│   ├── vehicle_images.csv
+│   └── seller_vehicle_relationships.csv
+├── docker-compose.yml                 # Container orchestration
+├── setup.sh                           # Setup script tự động
+├── reset_database.sh                  # Reset database
+├── load_complete_database.py          # Load data script
+├── check_db_status.py                 # Kiểm tra DB
+└── README.md                          # File này
 ```
 
-## Configuration
+---
 
-### Environment Variables
+## 🎯 Next Steps
 
-Create `.env` file:
-```bash
-# Database
-DATABASE_URL=postgresql://admin:admin123@postgres:5432/car_recsys
+Sau khi cài đặt xong, bạn có thể:
 
-# Search & Vector
-ELASTICSEARCH_URL=http://elasticsearch:9200
-QDRANT_URL=http://qdrant:6333
+1. **Khám phá API:** Mở http://localhost:3001 để xem OpenAPI docs
+2. **Quản lý DB:** Truy cập Bytebase tại http://localhost:8080
+3. **Query data:** Dùng PostgREST để query thay vì viết SQL
+4. **Build frontend:** Kết nối frontend với API tại port 3001
 
-# Cache
-REDIS_URL=redis://redis:6379
+---
 
-# Security
-SECRET_KEY=your-secret-key-change-in-production
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+## 📞 Support
 
-# Recommendation
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
-```
+Nếu gặp vấn đề, tạo issue tại: https://github.com/VietDucFCB/car-recsys-consultant-chatbot/issues
 
-## Development
+---
 
-### Run tests
-```bash
-docker-compose run backend pytest
-```
+## 📜 License
 
-### Access logs
-```bash
-docker-compose logs -f backend
-docker-compose logs -f etl-worker
-```
+MIT License - Free to use for personal and commercial projects.
 
-### Database migrations
-```bash
-docker-compose exec postgres psql -U admin -d car_recsys
-```
+---
 
-## Data Pipeline
-
-### ETL Flow
-1. **CSV → Raw**: Direct load from CSV files
-2. **Raw → Silver**: Clean, deduplicate, type conversion
-3. **Silver → Gold**: Business logic, computed fields
-4. **Gold → Elasticsearch**: Search index sync
-5. **Gold → Qdrant**: Vector embeddings sync
-
-### Data Quality
-- Completeness checks (missing values)
-- Uniqueness checks (duplicates)
-- Validity checks (data types, ranges)
-- Consistency checks (referential integrity)
-
-## Recommendation System
-
-### Baseline (Rule-based + Content)
-- Filter by budget range
-- Match body type, fuel type
-- Sort by ratings, price
-
-### Dense Retrieval
-- Encode vehicle descriptions to embeddings
-- Find similar vehicles via cosine similarity
-- Personalize with user preference embeddings
-
-### Hybrid Approach
-1. **Candidate Generation** (100-500 items):
-   - Popular items (trending)
-   - Content-based (features match)
-   - Collaborative (similar users liked)
-   - Dense retrieval (semantic search)
-
-2. **Reranking** (Top 20):
-   - Cross-encoder scoring
-   - User behavior signals
-   - Diversity optimization
-   - Generate explanations
-
-### Evaluation Metrics
-- **Offline**: MRR@10, NDCG@10, Recall@50
-- **Online**: CTR, Conversion rate, Session depth
-
-## Monitoring & Observability
-
-### Metrics
-- Request latency (p50, p95, p99)
-- QPS (queries per second)
-- Cache hit rate
-- Recommendation diversity
-
-### Logs
-- Structured JSON logs
-- Request/response tracking
-- Error tracking with stack traces
-
-### Tracing
-- Distributed tracing with correlation IDs
-- Database query performance
-- External API calls
-
-## Production Checklist
-
-- [ ] Change default passwords
-- [ ] Use strong SECRET_KEY
-- [ ] Enable HTTPS/SSL
-- [ ] Setup backup strategy
-- [ ] Configure log retention
-- [ ] Setup monitoring alerts
-- [ ] Rate limiting per user
-- [ ] CORS configuration
-- [ ] Database connection pooling
-- [ ] Load testing
-
-## License
-
-MIT
-
-## Support
-
-For issues and questions, create an issue in the repository.
+**Chúc bạn thành công! 🎉**

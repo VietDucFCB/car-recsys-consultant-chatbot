@@ -49,10 +49,10 @@ export default function FavoritesPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          ❤️ Xe yêu thích
+          ❤️ Favorite Cars
         </h1>
         <p className="text-gray-600">
-          Bạn có {favorites.length} xe trong danh sách yêu thích
+          You have {favorites.length} cars in your favorites
         </p>
       </div>
 
@@ -69,15 +69,15 @@ export default function FavoritesPage() {
       ) : (
         <div className="text-center py-12 bg-white rounded-lg shadow-md">
           <div className="text-6xl mb-4">🤍</div>
-          <p className="text-gray-600 text-lg mb-2">Chưa có xe yêu thích</p>
+          <p className="text-gray-600 text-lg mb-2">No favorite cars yet</p>
           <p className="text-gray-500 mb-6">
-            Hãy thêm những chiếc xe bạn quan tâm vào danh sách yêu thích
+            Add cars you're interested in to your favorites list
           </p>
           <a
             href="/search"
             className="inline-block bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 font-medium"
           >
-            Khám phá xe ngay
+            Explore Cars
           </a>
         </div>
       )}
