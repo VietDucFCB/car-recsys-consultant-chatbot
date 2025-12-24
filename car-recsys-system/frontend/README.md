@@ -73,7 +73,7 @@ frontend/
 │   ├── types/                  # TypeScript types
 │   │   └── index.ts            # Type definitions
 │   ├── lib/                    # Utilities
-│   │   └── api.ts              # Axios instance with interceptors
+│   │   └──               # Axios instance with interceptors
 │   └── styles/
 │       └── globals.css         # Global styles
 ├── public/                     # Static files
