@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { vehicleService } from '@/services/vehicleService';
 import { SearchFilters, SearchResponse } from '@/types';
 import VehicleCard from '@/components/VehicleCard';
 
-export default function AdvancedSearchPage() {
+function AdvancedSearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
@@ -333,6 +333,23 @@ export default function AdvancedSearchPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdvancedSearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="pt-16 min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
+            <p className="text-gray-500 mt-4">Đang tải...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <AdvancedSearchPageContent />
+    </Suspense>
   );
 }
 

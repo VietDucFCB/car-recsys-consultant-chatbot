@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { vehicleService } from '@/services/vehicleService';
 import { feedbackService } from '@/services/feedbackService';
 import { Vehicle } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 
-export default function ComparePage() {
+function ComparePageContent() {
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuthStore();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -236,5 +236,18 @@ export default function ComparePage() {
         </table>
       </div>
     </div>
+  );
+}
+
+export default function ComparePage() {
+  return (
+    <Suspense fallback={
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="text-gray-500 mt-4">Đang tải...</p>
+      </div>
+    }>
+      <ComparePageContent />
+    </Suspense>
   );
 }

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SearchBar from '@/components/SearchBar';
 import VehicleCard from '@/components/VehicleCard';
 import { vehicleService } from '@/services/vehicleService';
 import { SearchFilters, SearchResponse } from '@/types';
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,5 +161,22 @@ export default function SearchPage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="pt-16 space-y-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-600 mx-auto"></div>
+            <p className="text-gray-500 mt-4">Đang tải...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
   );
 }
