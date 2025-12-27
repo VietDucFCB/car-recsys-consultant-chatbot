@@ -76,3 +76,7 @@ models/*.h5
 *.temp
 tmp/
 temp/
+
+# Exception: Don't ignore frontend/src/lib (Next.js utilities)
+!frontend/src/lib/
+!frontend/src/lib/**
