@@ -6,41 +6,87 @@ import {
   Share2,
   Phone,
   MessageCircle,
-  MapPin,
   Fuel,
   Gauge,
   Settings2,
-  Calendar,
   Palette,
-  Users,
-  Zap,
   ChevronLeft,
   ChevronRight,
+  Star,
   Shield,
+  Car,
+  Loader2,
+  AlertCircle,
+  ImageOff,
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import VehicleCard from "@/components/VehicleCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { vehicles } from "@/data/vehicles";
+import { useVehicleDetail, useSimilarVehicles, useAddFavorite, useRemoveFavorite, useFavorites } from "@/hooks/useApi";
+import { formatPrice, isAuthenticated, trackVehicleView } from "@/lib/api";
 
 const VehicleDetailPage = () => {
-  const { id } = useParams();
-  const vehicle = vehicles.find((v) => v.id === Number(id));
+  const { id } = useParams<{ id: string }>();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [imageError, setImageError] = useState<{ [key: number]: boolean }>({});
+  
+  const { data: vehicle, isLoading, error } = useVehicleDetail(id);
+  const { data: similarData, isLoading: loadingSimilar } = useSimilarVehicles(id, 6);
+  const { data: favorites } = useFavorites();
+  const addFavorite = useAddFavorite();
+  const removeFavorite = useRemoveFavorite();
+  
+  const isFavorite = favorites?.some(f => f.vehicle_id === id) ?? false;
 
-  if (!vehicle) {
+  // Placeholder image
+  const placeholderImage = 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop&q=80';
+  
+  // Handle image error
+  const handleImageError = (index: number) => {
+    setImageError(prev => ({ ...prev, [index]: true }));
+  };
+
+  // Get image source with fallback
+  const getImageSrc = (url: string, index: number) => {
+    if (imageError[index]) {
+      return placeholderImage;
+    }
+    return url;
+  };
+
+  // Loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Header />
         <main className="flex-1 pt-28 pb-16">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto px-4 flex justify-center items-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <span className="ml-3 text-muted-foreground">Loading vehicle details...</span>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Error or not found
+  if (error || !vehicle) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <main className="flex-1 pt-28 pb-16">
+          <div className="container mx-auto px-4 text-center py-20">
+            <AlertCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h1 className="font-heading text-3xl mb-4">Vehicle not found</h1>
+            <p className="text-muted-foreground mb-6">
+              The vehicle you're looking for doesn't exist or has been removed.
+            </p>
             <Link to="/search">
-              <Button className="rounded-xl">Back to Search</Button>
+              <Button className="rounded-xl">Browse Vehicles</Button>
             </Link>
           </div>
         </main>
@@ -49,24 +95,61 @@ const VehicleDetailPage = () => {
     );
   }
 
+  // Get placeholder images
+  const getPlaceholderImages = () => {
+    const images = [
+      'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&h=600&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800&h=600&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop&q=80',
+    ];
+    return images;
+  };
+
+  const images = vehicle.images?.length > 0 ? vehicle.images : 
+    (vehicle.image_url ? [vehicle.image_url] : getPlaceholderImages());
+
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % vehicle.images.length);
+    setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + vehicle.images.length) % vehicle.images.length);
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  const handleFavoriteClick = async () => {
+    if (!isAuthenticated()) {
+      window.location.href = '/login';
+      return;
+    }
+
+    try {
+      if (isFavorite) {
+        await removeFavorite.mutateAsync(vehicle.vehicle_id);
+      } else {
+        await addFavorite.mutateAsync(vehicle.vehicle_id);
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+    }
   };
 
   const specs = [
-    { icon: Calendar, label: "Year", value: vehicle.year },
-    { icon: Gauge, label: "Mileage", value: vehicle.mileage },
-    { icon: Fuel, label: "Fuel Type", value: vehicle.fuelType },
-    { icon: Settings2, label: "Transmission", value: vehicle.transmission },
-    { icon: Palette, label: "Color", value: vehicle.color },
-    { icon: Users, label: "Seats", value: `${vehicle.seats} seats` },
-    { icon: Zap, label: "Engine", value: vehicle.engine },
-    { icon: Zap, label: "Power", value: vehicle.power },
+    { icon: Gauge, label: "Mileage", value: vehicle.mileage_str || 'N/A' },
+    { icon: Fuel, label: "Fuel Type", value: vehicle.fuel_type || 'N/A' },
+    { icon: Settings2, label: "Transmission", value: vehicle.transmission || 'N/A' },
+    { icon: Palette, label: "Exterior", value: vehicle.exterior_color || 'N/A' },
+    { icon: Car, label: "Drivetrain", value: vehicle.drivetrain || 'N/A' },
+    { icon: Gauge, label: "MPG", value: vehicle.mpg || 'N/A' },
   ];
+
+  const ratings = [
+    { label: "Overall", value: vehicle.car_rating },
+    { label: "Comfort", value: vehicle.comfort_rating },
+    { label: "Interior", value: vehicle.interior_rating },
+    { label: "Performance", value: vehicle.performance_rating },
+    { label: "Value", value: vehicle.value_rating },
+    { label: "Reliability", value: vehicle.reliability_rating },
+  ].filter(r => r.value);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -79,19 +162,27 @@ const VehicleDetailPage = () => {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-accent mb-8 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Inventory
+            Back to Search
           </Link>
 
           <div className="grid lg:grid-cols-2 gap-10">
             {/* Image Gallery */}
             <div className="space-y-4">
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-secondary">
-                <img
-                  src={vehicle.images[currentImageIndex]}
-                  alt={vehicle.title}
-                  className="w-full h-full object-cover"
-                />
-                {vehicle.images.length > 1 && (
+                {imageError[currentImageIndex] ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground bg-secondary">
+                    <ImageOff className="h-16 w-16 mb-3 opacity-50" />
+                    <p className="text-sm">Image not available</p>
+                  </div>
+                ) : (
+                  <img
+                    src={images[currentImageIndex]}
+                    alt={vehicle.title || 'Vehicle'}
+                    className="w-full h-full object-cover"
+                    onError={() => handleImageError(currentImageIndex)}
+                  />
+                )}
+                {images.length > 1 && (
                   <>
                     <Button
                       variant="ghost"
@@ -114,24 +205,42 @@ const VehicleDetailPage = () => {
 
                 {/* Image counter */}
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-full text-xs font-medium">
-                  {currentImageIndex + 1} / {vehicle.images.length}
+                  {currentImageIndex + 1} / {images.length}
                 </div>
+
+                {/* Condition badge */}
+                {vehicle.condition && (
+                  <Badge className="absolute top-3 left-3 capitalize">
+                    {vehicle.condition}
+                  </Badge>
+                )}
               </div>
 
               {/* Thumbnails */}
-              {vehicle.images.length > 1 && (
+              {images.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-2">
-                  {vehicle.images.map((img, index) => (
+                  {images.slice(0, 6).map((img, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`shrink-0 w-24 h-18 rounded-xl overflow-hidden border-2 transition-all ${
+                      className={`shrink-0 w-20 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                         index === currentImageIndex 
                           ? "border-accent ring-2 ring-accent/20" 
                           : "border-transparent opacity-60 hover:opacity-100"
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      {imageError[index] ? (
+                        <div className="w-full h-full flex items-center justify-center bg-secondary">
+                          <ImageOff className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <img 
+                          src={img} 
+                          alt="" 
+                          className="w-full h-full object-cover"
+                          onError={() => handleImageError(index)}
+                        />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -144,10 +253,10 @@ const VehicleDetailPage = () => {
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div>
                     <p className="text-sm font-medium text-accent uppercase tracking-wider mb-1">
-                      {vehicle.brand}
+                      {vehicle.brand || 'Vehicle'}
                     </p>
                     <h1 className="font-heading text-3xl md:text-4xl font-semibold text-foreground">
-                      {vehicle.model}
+                      {vehicle.car_model || vehicle.title}
                     </h1>
                   </div>
                   <div className="flex gap-2 shrink-0">
@@ -155,95 +264,162 @@ const VehicleDetailPage = () => {
                       variant="outline"
                       size="icon"
                       className="rounded-full h-11 w-11"
-                      onClick={() => setIsFavorite(!isFavorite)}
+                      onClick={handleFavoriteClick}
+                      disabled={addFavorite.isPending || removeFavorite.isPending}
                     >
-                      <Heart
-                        className={`h-5 w-5 ${isFavorite ? "fill-accent text-accent" : ""}`}
-                      />
+                      <Heart className={`h-5 w-5 ${isFavorite ? "fill-accent text-accent" : ""}`} />
                     </Button>
                     <Button variant="outline" size="icon" className="rounded-full h-11 w-11">
                       <Share2 className="h-5 w-5" />
                     </Button>
                   </div>
                 </div>
-                <p className="text-muted-foreground">
-                  {vehicle.title}
-                </p>
+                <p className="text-muted-foreground">{vehicle.title}</p>
               </div>
 
-              <p className="font-heading text-4xl font-bold text-foreground">{vehicle.price}</p>
+              <p className="font-heading text-4xl font-bold text-foreground">
+                {formatPrice(vehicle.price)}
+                {vehicle.monthly_payment && (
+                  <span className="text-lg font-normal text-muted-foreground ml-2">
+                    ~${vehicle.monthly_payment.toFixed(0)}/mo
+                  </span>
+                )}
+              </p>
 
-              <Separator className="my-6" />
+              <Separator />
 
               {/* Specs Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {specs.map((spec, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-                    <div className="p-2.5 bg-accent/10 rounded-lg">
+                    <div className="p-2 bg-accent/10 rounded-lg">
                       <spec.icon className="h-4 w-4 text-accent" />
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">{spec.label}</p>
-                      <p className="text-sm font-medium text-foreground">{spec.value}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{spec.value}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <Separator className="my-6" />
-
-              {/* Description */}
-              <div>
-                <h3 className="font-heading text-xl font-semibold mb-4">Description</h3>
-                <p className="text-muted-foreground leading-relaxed">{vehicle.description}</p>
-              </div>
-
-              {/* Features */}
-              <div>
-                <h3 className="font-heading text-xl font-semibold mb-4">Features</h3>
-                <div className="flex flex-wrap gap-2">
-                  {vehicle.features.map((feature, index) => (
-                    <Badge key={index} variant="secondary" className="px-3 py-1.5 rounded-lg text-sm font-normal">
-                      {feature}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <Separator className="my-6" />
-
-              {/* Seller Info */}
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <div className="flex items-center gap-4 mb-5">
-                  <Avatar className="h-14 w-14 border-2 border-accent/20">
-                    <AvatarImage src={vehicle.seller.avatar} />
-                    <AvatarFallback className="text-lg">{vehicle.seller.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground text-lg">{vehicle.seller.name}</p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {vehicle.seller.location}
-                    </p>
+              {/* Ratings */}
+              {ratings.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Star className="h-5 w-5 text-accent" />
+                      Ratings
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                      {ratings.map((rating, index) => (
+                        <div key={index} className="text-center p-3 bg-secondary/50 rounded-lg">
+                          <p className="text-2xl font-bold text-foreground">{rating.value?.toFixed(1)}</p>
+                          <p className="text-xs text-muted-foreground">{rating.label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {vehicle.percentage_recommend && (
+                      <p className="text-sm text-muted-foreground mt-3 text-center">
+                        <span className="text-accent font-semibold">{vehicle.percentage_recommend}%</span> of owners recommend this vehicle
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-accent bg-accent/10 px-2.5 py-1 rounded-full">
-                    <Shield className="h-3.5 w-3.5" />
-                    Verified
+                </>
+              )}
+
+              {/* Vehicle History */}
+              {(vehicle.accidents_damage || vehicle.one_owner !== null) && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-accent" />
+                      Vehicle History
+                    </h3>
+                    <div className="space-y-2">
+                      {vehicle.accidents_damage && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-muted-foreground">Accidents:</span>
+                          <span className={vehicle.accidents_damage.toLowerCase().includes('none') ? 'text-green-500' : 'text-yellow-500'}>
+                            {vehicle.accidents_damage}
+                          </span>
+                        </div>
+                      )}
+                      {vehicle.one_owner !== null && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-muted-foreground">Ownership:</span>
+                          <span className={vehicle.one_owner ? 'text-green-500' : ''}>
+                            {vehicle.one_owner ? 'Single Owner' : 'Multiple Owners'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-3">
-                  <Button className="flex-1 h-12 rounded-xl bg-accent hover:bg-gold-dark text-accent-foreground shadow-gold">
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call Now
-                  </Button>
-                  <Button variant="outline" className="flex-1 h-12 rounded-xl">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Message
-                  </Button>
-                </div>
+                </>
+              )}
+
+              <Separator />
+
+              {/* Contact Buttons */}
+              <div className="flex gap-3">
+                <Button 
+                  className="flex-1 h-12 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground"
+                  onClick={() => vehicle.vehicle_url && window.open(vehicle.vehicle_url, '_blank')}
+                >
+                  <Phone className="h-4 w-4 mr-2" />
+                  View Listing
+                </Button>
+                <Button variant="outline" className="flex-1 h-12 rounded-xl">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Contact Seller
+                </Button>
               </div>
             </div>
           </div>
+
+          {/* Similar Vehicles Section */}
+          {similarData && similarData.recommendations.length > 0 && (
+            <div className="mt-20">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="font-heading text-2xl md:text-3xl font-semibold text-foreground">
+                    Similar Vehicles
+                  </h2>
+                  <p className="text-muted-foreground mt-1">
+                    Based on your viewing history and preferences
+                  </p>
+                </div>
+                <Badge variant="outline" className="hidden sm:flex">
+                  {similarData.algorithm}
+                </Badge>
+              </div>
+
+              {loadingSimilar ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {similarData.recommendations.slice(0, 6).map((item, index) => (
+                    <div
+                      key={item.vehicle.vehicle_id}
+                      className="animate-fade-in opacity-0"
+                      style={{ animationDelay: `${index * 0.1}s`, animationFillMode: 'forwards' }}
+                    >
+                      <VehicleCard vehicle={item.vehicle} />
+                      {item.reason && (
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          {item.reason}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </main>
       <Footer />

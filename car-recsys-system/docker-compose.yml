@@ -163,7 +163,7 @@ services:
       - car-recsys-network
     command: tail -f /dev/null
 
-  # Frontend (Next.js)
+  # Frontend (Vite + React)
   frontend:
     build:
       context: ./frontend
@@ -172,16 +172,14 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - VITE_API_URL=http://localhost:8000/api/v1
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     depends_on:
       - backend
     networks:
       - car-recsys-network
-    command: npm run dev
 
 networks:
   car-recsys-network:

@@ -69,6 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_vehicles_vin ON raw.used_vehicles(vin);
 -- Users table
 CREATE TABLE IF NOT EXISTS gold.users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
     hashed_password TEXT NOT NULL,
     full_name TEXT,

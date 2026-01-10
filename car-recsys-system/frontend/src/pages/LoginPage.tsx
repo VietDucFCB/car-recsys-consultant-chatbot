@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Car, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Car, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { authApi, storeAuthData } from "@/lib/api";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -13,20 +14,59 @@ const LoginPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Form fields
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    full_name: "",
+    phone: "",
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: isLogin ? "Welcome back!" : "Account created!",
-        description: "You have been successfully authenticated.",
-      });
+    try {
+      if (isLogin) {
+        // Login - use email as username
+        const response = await authApi.login(formData.email, formData.password);
+        storeAuthData(response);
+        toast({
+          title: "Welcome back!",
+          description: `Logged in as ${response.user.username || response.user.email}`,
+        });
+      } else {
+        // Register
+        const response = await authApi.register({
+          username: formData.username || formData.email.split('@')[0],
+          email: formData.email,
+          password: formData.password,
+          full_name: formData.full_name,
+          phone: formData.phone,
+        });
+        storeAuthData(response);
+        toast({
+          title: "Account created!",
+          description: "Welcome to CarMarket!",
+        });
+      }
       navigate("/");
-    }, 1000);
+    } catch (error: any) {
+      const message = error?.response?.data?.detail || "Authentication failed. Please try again.";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -57,14 +97,43 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="John Doe" required className="h-12 rounded-xl" />
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input 
+                  id="full_name" 
+                  placeholder="John Doe" 
+                  required 
+                  className="h-12 rounded-xl"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                />
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input 
+                  id="username" 
+                  placeholder="johndoe" 
+                  required 
+                  className="h-12 rounded-xl"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="you@example.com" required className="h-12 rounded-xl" />
+              <Label htmlFor="email">{isLogin ? "Email or Username" : "Email"}</Label>
+              <Input 
+                id="email" 
+                type={isLogin ? "text" : "email"} 
+                placeholder="you@example.com" 
+                required 
+                className="h-12 rounded-xl"
+                value={formData.email}
+                onChange={handleInputChange}
+              />
             </div>
 
             <div className="space-y-2">
@@ -76,6 +145,8 @@ const LoginPage = () => {
                   placeholder="••••••••"
                   required
                   className="h-12 rounded-xl pr-12"
+                  value={formData.password}
+                  onChange={handleInputChange}
                 />
                 <button
                   type="button"
@@ -97,8 +168,15 @@ const LoginPage = () => {
 
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" type="tel" placeholder="+1 555-0123" required className="h-12 rounded-xl" />
+                <Label htmlFor="phone">Phone Number (optional)</Label>
+                <Input 
+                  id="phone" 
+                  type="tel" 
+                  placeholder="+1 555-0123" 
+                  className="h-12 rounded-xl"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                />
               </div>
             )}
 
@@ -107,8 +185,17 @@ const LoginPage = () => {
               className="w-full h-12 rounded-xl bg-accent hover:bg-gold-dark text-accent-foreground shadow-gold font-medium text-base" 
               disabled={isLoading}
             >
-              {isLoading ? "Processing..." : isLogin ? "Sign In" : "Create Account"}
-              <ArrowRight className="ml-2 h-5 w-5" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {isLogin ? "Sign In" : "Create Account"}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
             </Button>
           </form>
 

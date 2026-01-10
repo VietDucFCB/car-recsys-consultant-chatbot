@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VehicleCard from "@/components/VehicleCard";
@@ -21,308 +21,174 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { vehicles, brands, fuelTypes, transmissions, categories } from "@/data/vehicles";
+import { useVehicleSearch } from "@/hooks/useApi";
+import { SearchParams } from "@/lib/api";
+
+// Available filter options (can be fetched from API later)
+const brands = ["Audi", "BMW", "Buick", "Chevrolet", "Dodge", "Ford", "GMC", "Honda", "Hyundai", "Jeep", "Kia", "Lexus", "Lincoln", "Mazda", "Mercedes-Benz", "Mitsubishi", "Nissan", "RAM", "Subaru", "Toyota", "Volkswagen", "Volvo"];
+const fuelTypes = ["Gasoline", "Diesel", "Electric", "Hybrid"];
+const transmissions = ["Automatic", "Manual", "CVT"];
 
 const SearchPage = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Filter states
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [selectedBrand, setSelectedBrand] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "");
-  const [location, setLocation] = useState<string>("");
-  const [selectedFuel, setSelectedFuel] = useState<string>("");
-  const [selectedTransmission, setSelectedTransmission] = useState<string>("");
-  const [priceMin, setPriceMin] = useState<string>("");
-  const [priceMax, setPriceMax] = useState<string>("");
-  const [yearMin, setYearMin] = useState<string>("");
-  const [yearMax, setYearMax] = useState<string>("");
-  const [selectedMileage, setSelectedMileage] = useState<string>("");
+  const [selectedBrand, setSelectedBrand] = useState(searchParams.get("brand") || "");
+  const [selectedFuel, setSelectedFuel] = useState(searchParams.get("fuel") || "");
+  const [selectedTransmission, setSelectedTransmission] = useState(searchParams.get("transmission") || "");
+  const [priceMin, setPriceMin] = useState(searchParams.get("price_min") || "");
+  const [priceMax, setPriceMax] = useState(searchParams.get("price_max") || "");
+  const [mileageMax, setMileageMax] = useState(searchParams.get("mileage_max") || "");
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "created_at");
+  const [sortOrder, setSortOrder] = useState(searchParams.get("order") || "desc");
+  const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Get unique models based on selected brand
-  const availableModels = useMemo(() => {
-    if (!selectedBrand || selectedBrand === "all") {
-      return [...new Set(vehicles.map((v) => v.model))];
-    }
-    return [...new Set(vehicles.filter((v) => v.brand === selectedBrand).map((v) => v.model))];
-  }, [selectedBrand]);
+  // Build API params
+  const apiParams: SearchParams = {
+    query: searchQuery || undefined,
+    brand: selectedBrand && selectedBrand !== "all" ? selectedBrand : undefined,
+    fuel_type: selectedFuel && selectedFuel !== "all" ? selectedFuel : undefined,
+    transmission: selectedTransmission && selectedTransmission !== "all" ? selectedTransmission : undefined,
+    price_min: priceMin ? parseFloat(priceMin.replace(/\D/g, "")) : undefined,
+    price_max: priceMax ? parseFloat(priceMax.replace(/\D/g, "")) : undefined,
+    mileage_max: mileageMax && mileageMax !== "all" ? parseFloat(mileageMax) : undefined,
+    sort_by: sortBy,
+    sort_order: sortOrder,
+    page,
+    page_size: 24,
+  };
 
-  // Get unique years from vehicles
-  const availableYears = useMemo(() => {
-    const years = [...new Set(vehicles.map((v) => v.year))].sort((a, b) => b - a);
-    return years;
-  }, []);
+  const { data, isLoading, error } = useVehicleSearch(apiParams);
 
-  // Get unique locations
-  const availableLocations = useMemo(() => {
-    return [...new Set(vehicles.map((v) => v.seller.location))];
-  }, []);
-
-  const filteredVehicles = vehicles.filter((vehicle) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      vehicle.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.model.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesBrand = selectedBrand === "" || selectedBrand === "all" || vehicle.brand === selectedBrand;
-    const matchesModel = selectedModel === "" || selectedModel === "all" || vehicle.model === selectedModel;
-    const matchesCategory = selectedCategory === "" || selectedCategory === "all" || vehicle.category === selectedCategory || vehicle.fuelType === selectedCategory;
-    const matchesLocation = location === "" || vehicle.seller.location.toLowerCase().includes(location.toLowerCase());
-    const matchesFuel = selectedFuel === "" || selectedFuel === "all" || vehicle.fuelType === selectedFuel;
-    const matchesTransmission =
-      selectedTransmission === "" || selectedTransmission === "all" || vehicle.transmission === selectedTransmission;
-
-    // Price filtering
-    let matchesPrice = true;
-    if (priceMin) {
-      const minPrice = parseInt(priceMin.replace(/\D/g, ""), 10);
-      if (!isNaN(minPrice)) matchesPrice = vehicle.priceValue >= minPrice;
-    }
-    if (priceMax && matchesPrice) {
-      const maxPrice = parseInt(priceMax.replace(/\D/g, ""), 10);
-      if (!isNaN(maxPrice)) matchesPrice = vehicle.priceValue <= maxPrice;
-    }
-
-    // Year filtering
-    let matchesYear = true;
-    if (yearMin && yearMin !== "all") {
-      matchesYear = vehicle.year >= parseInt(yearMin, 10);
-    }
-    if (yearMax && yearMax !== "all" && matchesYear) {
-      matchesYear = vehicle.year <= parseInt(yearMax, 10);
-    }
-
-    // Mileage filtering
-    let matchesMileage = true;
-    if (selectedMileage && selectedMileage !== "all") {
-      const maxMileage = parseInt(selectedMileage, 10);
-      matchesMileage = vehicle.mileageValue <= maxMileage;
-    }
-
-    return matchesSearch && matchesBrand && matchesModel && matchesCategory && matchesLocation && matchesFuel && matchesTransmission && matchesPrice && matchesYear && matchesMileage;
-  });
+  // Update URL params when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (selectedBrand && selectedBrand !== "all") params.set("brand", selectedBrand);
+    if (selectedFuel && selectedFuel !== "all") params.set("fuel", selectedFuel);
+    if (selectedTransmission && selectedTransmission !== "all") params.set("transmission", selectedTransmission);
+    if (priceMin) params.set("price_min", priceMin);
+    if (priceMax) params.set("price_max", priceMax);
+    if (mileageMax && mileageMax !== "all") params.set("mileage_max", mileageMax);
+    if (sortBy !== "created_at") params.set("sort", sortBy);
+    if (sortOrder !== "desc") params.set("order", sortOrder);
+    if (page > 1) params.set("page", page.toString());
+    
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, selectedBrand, selectedFuel, selectedTransmission, priceMin, priceMax, mileageMax, sortBy, sortOrder, page]);
 
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedBrand("");
-    setSelectedModel("");
-    setSelectedCategory("");
-    setLocation("");
     setSelectedFuel("");
     setSelectedTransmission("");
     setPriceMin("");
     setPriceMax("");
-    setYearMin("");
-    setYearMax("");
-    setSelectedMileage("");
+    setMileageMax("");
+    setSortBy("created_at");
+    setSortOrder("desc");
+    setPage(1);
   };
 
-  const hasActiveFilters =
-    searchQuery || selectedBrand || selectedModel || selectedCategory || location || selectedFuel || selectedTransmission || priceMin || priceMax || yearMin || yearMax || selectedMileage;
+  const hasActiveFilters = searchQuery || selectedBrand || selectedFuel || selectedTransmission || priceMin || priceMax || mileageMax;
 
   const FilterContent = () => (
     <div className="space-y-6">
-      {/* Basics Section */}
+      {/* Brand */}
       <div>
-        <h4 className="text-sm font-semibold text-primary mb-4">Basics</h4>
-        <div className="space-y-4">
-          {/* Make/Brand */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Make</Label>
-            <Select value={selectedBrand} onValueChange={(val) => { setSelectedBrand(val); setSelectedModel(""); }}>
-              <SelectTrigger className="h-10 rounded-lg bg-background border-input">
-                <SelectValue placeholder="All makes" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All makes</SelectItem>
-                {brands.map((brand) => (
-                  <SelectItem key={brand} value={brand}>
-                    {brand}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Model */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Model</Label>
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger className="h-10 rounded-lg bg-background border-input">
-                <SelectValue placeholder="All models" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All models</SelectItem>
-                {availableModels.map((model) => (
-                  <SelectItem key={model} value={model}>
-                    {model}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Category</Label>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="h-10 rounded-lg bg-background border-input">
-                <SelectValue placeholder="All categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Location */}
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Location</Label>
-            <Input
-              type="text"
-              placeholder="ZIP or city"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="h-10 rounded-lg bg-background border-input"
-            />
-          </div>
-        </div>
+        <Label className="text-sm font-medium mb-2 block">Make / Brand</Label>
+        <Select value={selectedBrand} onValueChange={(val) => { setSelectedBrand(val); setPage(1); }}>
+          <SelectTrigger className="h-10">
+            <SelectValue placeholder="All makes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All makes</SelectItem>
+            {brands.map((brand) => (
+              <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Price Section */}
+      {/* Price Range */}
       <div>
-        <h4 className="text-sm font-semibold text-primary mb-4">Price</h4>
+        <Label className="text-sm font-medium mb-2 block">Price Range</Label>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Min</Label>
-            <Input
-              type="text"
-              placeholder="$0"
-              value={priceMin}
-              onChange={(e) => setPriceMin(e.target.value)}
-              className="h-10 rounded-lg bg-background border-input"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Max</Label>
-            <Input
-              type="text"
-              placeholder="$100k"
-              value={priceMax}
-              onChange={(e) => setPriceMax(e.target.value)}
-              className="h-10 rounded-lg bg-background border-input"
-            />
-          </div>
+          <Input
+            type="text"
+            placeholder="Min $"
+            value={priceMin}
+            onChange={(e) => { setPriceMin(e.target.value); setPage(1); }}
+            className="h-10"
+          />
+          <Input
+            type="text"
+            placeholder="Max $"
+            value={priceMax}
+            onChange={(e) => { setPriceMax(e.target.value); setPage(1); }}
+            className="h-10"
+          />
         </div>
       </div>
 
-      {/* Year Section */}
+      {/* Mileage */}
       <div>
-        <h4 className="text-sm font-semibold text-primary mb-4">Year</h4>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Min</Label>
-            <Select value={yearMin} onValueChange={setYearMin}>
-              <SelectTrigger className="h-10 rounded-lg bg-background border-input">
-                <SelectValue placeholder="Oldest" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Oldest</SelectItem>
-                {availableYears.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Max</Label>
-            <Select value={yearMax} onValueChange={setYearMax}>
-              <SelectTrigger className="h-10 rounded-lg bg-background border-input">
-                <SelectValue placeholder="Newest" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Newest</SelectItem>
-                {availableYears.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      {/* Mileage Section */}
-      <div>
-        <h4 className="text-sm font-semibold text-primary mb-4">Mileage</h4>
-        <Select value={selectedMileage} onValueChange={setSelectedMileage}>
-          <SelectTrigger className="h-10 rounded-lg bg-background border-input">
+        <Label className="text-sm font-medium mb-2 block">Maximum Mileage</Label>
+        <Select value={mileageMax} onValueChange={(val) => { setMileageMax(val); setPage(1); }}>
+          <SelectTrigger className="h-10">
             <SelectValue placeholder="Any mileage" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Any mileage</SelectItem>
-            <SelectItem value="5000">Under 5,000 km</SelectItem>
-            <SelectItem value="10000">Under 10,000 km</SelectItem>
-            <SelectItem value="20000">Under 20,000 km</SelectItem>
-            <SelectItem value="50000">Under 50,000 km</SelectItem>
-            <SelectItem value="100000">Under 100,000 km</SelectItem>
+            <SelectItem value="10000">Under 10,000 mi</SelectItem>
+            <SelectItem value="25000">Under 25,000 mi</SelectItem>
+            <SelectItem value="50000">Under 50,000 mi</SelectItem>
+            <SelectItem value="75000">Under 75,000 mi</SelectItem>
+            <SelectItem value="100000">Under 100,000 mi</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Fuel Type Section */}
+      {/* Fuel Type */}
       <div>
-        <h4 className="text-sm font-semibold text-primary mb-4">Fuel Type</h4>
-        <Select value={selectedFuel} onValueChange={setSelectedFuel}>
-          <SelectTrigger className="h-10 rounded-lg bg-background border-input">
-            <SelectValue placeholder="All" />
+        <Label className="text-sm font-medium mb-2 block">Fuel Type</Label>
+        <Select value={selectedFuel} onValueChange={(val) => { setSelectedFuel(val); setPage(1); }}>
+          <SelectTrigger className="h-10">
+            <SelectValue placeholder="All types" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="all">All types</SelectItem>
             {fuelTypes.map((fuel) => (
-              <SelectItem key={fuel} value={fuel}>
-                {fuel}
-              </SelectItem>
+              <SelectItem key={fuel} value={fuel}>{fuel}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Transmission Section */}
+      {/* Transmission */}
       <div>
-        <h4 className="text-sm font-semibold text-primary mb-4">Transmission</h4>
-        <Select value={selectedTransmission} onValueChange={setSelectedTransmission}>
-          <SelectTrigger className="h-10 rounded-lg bg-background border-input">
-            <SelectValue placeholder="All" />
+        <Label className="text-sm font-medium mb-2 block">Transmission</Label>
+        <Select value={selectedTransmission} onValueChange={(val) => { setSelectedTransmission(val); setPage(1); }}>
+          <SelectTrigger className="h-10">
+            <SelectValue placeholder="All transmissions" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="all">All transmissions</SelectItem>
             {transmissions.map((trans) => (
-              <SelectItem key={trans} value={trans}>
-                {trans}
-              </SelectItem>
+              <SelectItem key={trans} value={trans}>{trans}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Reset Filters Button */}
-      <Button 
-        variant="outline" 
-        onClick={clearFilters} 
-        className="w-full h-10 rounded-lg border-input"
-      >
-        Reset filters
-      </Button>
+      {/* Reset Button */}
+      {hasActiveFilters && (
+        <Button variant="outline" onClick={clearFilters} className="w-full">
+          Reset Filters
+        </Button>
+      )}
     </div>
   );
 
@@ -337,34 +203,53 @@ const SearchPage = () => {
               Browse Inventory
             </h1>
             <p className="text-muted-foreground">
-              Explore our collection of premium vehicles
+              Explore our collection of quality vehicles
             </p>
           </div>
 
           {/* Search Header */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-accent" />
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search by make, model, or keyword..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-11 h-12 rounded-xl bg-secondary/50 border-border/50 focus:border-accent"
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                className="pl-11 h-12 rounded-xl"
               />
             </div>
+
+            {/* Sort */}
+            <Select value={`${sortBy}-${sortOrder}`} onValueChange={(val) => {
+              const [sort, order] = val.split("-");
+              setSortBy(sort);
+              setSortOrder(order);
+              setPage(1);
+            }}>
+              <SelectTrigger className="w-48 h-12">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at-desc">Newest First</SelectItem>
+                <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="mileage-asc">Mileage: Low to High</SelectItem>
+              </SelectContent>
+            </Select>
 
             {/* Mobile filter button */}
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" className="md:hidden h-12 rounded-xl">
+                <Button variant="outline" className="md:hidden h-12">
                   <SlidersHorizontal className="h-4 w-4 mr-2" />
                   Filters
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-80">
                 <SheetHeader>
-                  <SheetTitle className="font-heading">Filters</SheetTitle>
+                  <SheetTitle>Filters</SheetTitle>
                 </SheetHeader>
                 <div className="mt-6">
                   <FilterContent />
@@ -384,30 +269,88 @@ const SearchPage = () => {
 
             {/* Results */}
             <div className="flex-1">
+              {/* Results count */}
               <div className="flex items-center justify-between mb-6">
                 <p className="text-muted-foreground">
-                  Found <span className="text-foreground font-semibold">{filteredVehicles.length}</span> vehicles
+                  {isLoading ? (
+                    "Searching..."
+                  ) : (
+                    <>
+                      Found <span className="text-foreground font-semibold">{data?.total || 0}</span> vehicles
+                    </>
+                  )}
                 </p>
               </div>
 
-              {filteredVehicles.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredVehicles.map((vehicle, index) => (
-                    <div
-                      key={vehicle.id}
-                      className="animate-fade-in opacity-0"
-                      style={{ animationDelay: `${index * 0.05}s` }}
-                    >
-                      <VehicleCard {...vehicle} />
-                    </div>
-                  ))}
+              {/* Loading State */}
+              {isLoading && (
+                <div className="flex justify-center items-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                  <span className="ml-3 text-muted-foreground">Loading vehicles...</span>
                 </div>
-              ) : (
+              )}
+
+              {/* Error State */}
+              {error && !isLoading && (
+                <div className="text-center py-20 bg-secondary/30 rounded-2xl">
+                  <p className="text-muted-foreground text-lg mb-4">
+                    Unable to load vehicles. Please try again.
+                  </p>
+                  <Button variant="outline" onClick={() => window.location.reload()}>
+                    Retry
+                  </Button>
+                </div>
+              )}
+
+              {/* Results Grid */}
+              {!isLoading && !error && data?.results && data.results.length > 0 && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {data.results.map((vehicle, index) => (
+                      <div
+                        key={vehicle.vehicle_id}
+                        className="animate-fade-in opacity-0"
+                        style={{ animationDelay: `${index * 0.03}s`, animationFillMode: 'forwards' }}
+                      >
+                        <VehicleCard vehicle={vehicle} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {data.total_pages > 1 && (
+                    <div className="flex justify-center items-center gap-4 mt-12">
+                      <Button
+                        variant="outline"
+                        disabled={page <= 1}
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-muted-foreground">
+                        Page {page} of {data.total_pages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        disabled={page >= data.total_pages}
+                        onClick={() => setPage(p => p + 1)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Empty State */}
+              {!isLoading && !error && (!data?.results || data.results.length === 0) && (
                 <div className="text-center py-20 bg-secondary/30 rounded-2xl">
                   <p className="text-muted-foreground text-lg mb-4">No vehicles found</p>
-                  <Button variant="outline" onClick={clearFilters} className="rounded-xl">
-                    Clear Filters
-                  </Button>
+                  {hasActiveFilters && (
+                    <Button variant="outline" onClick={clearFilters}>
+                      Clear Filters
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

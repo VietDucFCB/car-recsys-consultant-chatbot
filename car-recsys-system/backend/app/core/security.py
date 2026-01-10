@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 
 from app.core.config import settings
@@ -13,8 +13,9 @@ from app.core.config import settings
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+# OAuth2 scheme - auto_error=False allows optional auth
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+oauth2_scheme_required = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -51,8 +52,8 @@ def decode_access_token(token: str) -> Optional[dict]:
         return None
 
 
-async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
-    """Get current user ID from JWT token"""
+async def get_current_user_id(token: str = Depends(oauth2_scheme_required)) -> str:
+    """Get current user ID from JWT token (required authentication)"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -70,8 +71,12 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
     return user_id
 
 
-async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[str]:
-    """Get current user ID if authenticated, otherwise None (for anonymous users)"""
+async def get_current_user_id_optional(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[str]:
+    """
+    Get current user ID if authenticated, otherwise None (for anonymous users).
+    Used for endpoints that work for both authenticated and anonymous users
+    but provide enhanced features for authenticated users.
+    """
     if not token:
         return None
     
@@ -79,7 +84,12 @@ async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme
         payload = decode_access_token(token)
         if payload:
             return payload.get("sub")
-    except:
+    except Exception:
         pass
     
     return None
+
+
+async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme)) -> Optional[str]:
+    """Alias for get_current_user_id_optional for backward compatibility"""
+    return await get_current_user_id_optional(token)

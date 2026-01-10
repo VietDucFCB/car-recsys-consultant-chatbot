@@ -1,5 +1,5 @@
 """
-Search endpoints
+Search endpoints - Vehicle search with filters
 """
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -8,7 +8,7 @@ from typing import Optional
 import math
 
 from app.core.database import get_db
-from app.schemas.vehicle import VehicleResponse, VehicleSearchResponse
+from app.schemas.vehicle import VehicleListItem, VehicleSearchResponse
 
 router = APIRouter()
 
@@ -26,26 +26,24 @@ async def search_vehicles(
     mileage_max: Optional[float] = Query(None),
     fuel_type: Optional[str] = Query(None),
     transmission: Optional[str] = Query(None),
-    body_type: Optional[str] = Query(None),
-    location: Optional[str] = Query(None),
-    sort_by: str = Query("id", description="Sort field: price, year, mileage, id"),
+    drivetrain: Optional[str] = Query(None),
+    exterior_color: Optional[str] = Query(None),
+    min_rating: Optional[float] = Query(None),
+    sort_by: str = Query("created_at", description="Sort field: price, mileage, car_rating, created_at"),
     sort_order: str = Query("desc", description="Sort order: asc, desc"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
     """
-    Search vehicles with filters using raw SQL for reliability
+    Search vehicles with filters
     """
-    # Determine which table to query based on condition
-    table_name = "raw.new_vehicles" if condition and condition.lower() == "new" else "raw.used_vehicles"
-    
     # Build WHERE conditions
-    conditions = []
+    conditions = ["title IS NOT NULL"]
     params = {}
     
     if query:
-        conditions.append("(title ILIKE :query OR brand ILIKE :query OR model ILIKE :query)")
+        conditions.append("(title ILIKE :query OR brand ILIKE :query OR car_model ILIKE :query)")
         params['query'] = f"%{query}%"
     
     if brand:
@@ -53,16 +51,12 @@ async def search_vehicles(
         params['brand'] = f"%{brand}%"
     
     if model:
-        conditions.append("model ILIKE :model")
+        conditions.append("car_model ILIKE :model")
         params['model'] = f"%{model}%"
     
-    if year_min:
-        conditions.append("year >= :year_min")
-        params['year_min'] = year_min
-    
-    if year_max:
-        conditions.append("year <= :year_max")
-        params['year_max'] = year_max
+    if condition:
+        conditions.append("condition ILIKE :condition")
+        params['condition'] = f"%{condition}%"
     
     if price_min:
         conditions.append("price >= :price_min")
@@ -84,28 +78,33 @@ async def search_vehicles(
         conditions.append("transmission ILIKE :transmission")
         params['transmission'] = f"%{transmission}%"
     
-    if body_type:
-        conditions.append("body_type ILIKE :body_type")
-        params['body_type'] = f"%{body_type}%"
+    if drivetrain:
+        conditions.append("drivetrain ILIKE :drivetrain")
+        params['drivetrain'] = f"%{drivetrain}%"
     
-    if location:
-        conditions.append("location ILIKE :location")
-        params['location'] = f"%{location}%"
+    if exterior_color:
+        conditions.append("exterior_color ILIKE :exterior_color")
+        params['exterior_color'] = f"%{exterior_color}%"
     
-    where_clause = " AND ".join(conditions) if conditions else "1=1"
+    if min_rating:
+        conditions.append("car_rating >= :min_rating")
+        params['min_rating'] = min_rating
+    
+    where_clause = " AND ".join(conditions)
     
     # Get total count
-    count_sql = f"SELECT COUNT(*) FROM {table_name} WHERE {where_clause}"
+    count_sql = f"SELECT COUNT(*) FROM raw.used_vehicles WHERE {where_clause}"
     total = db.execute(text(count_sql), params).scalar()
     
     # Build ORDER BY
-    # Map id to vehicle_id since that's the actual column name
     sort_column_map = {
-        'id': 'vehicle_id',
         'price': 'price',
-        'mileage': 'mileage'
+        'mileage': 'mileage',
+        'car_rating': 'car_rating',
+        'created_at': 'created_at',
+        'rating': 'car_rating',
     }
-    sort_column = sort_column_map.get(sort_by, 'vehicle_id')
+    sort_column = sort_column_map.get(sort_by, 'created_at')
     order = 'ASC' if sort_order.lower() == 'asc' else 'DESC'
     
     # Get paginated results
@@ -115,32 +114,25 @@ async def search_vehicles(
     
     query_sql = f"""
         SELECT 
-            v.vehicle_id, 
-            v.vehicle_url, 
-            v.title, 
-            v.price::text, 
-            v.brand, 
-            v.car_model, 
-            '' as year, 
-            v.mileage::text, 
-            v.fuel_type, 
-            v.transmission, 
-            '' as body_type, 
-            v.exterior_color, 
-            '' as seats, 
-            '' as origin, 
-            '' as location, 
-            '' as description, 
+            v.vehicle_id,
+            v.title,
+            v.brand,
+            v.car_model,
+            v.price,
+            v.mileage_str,
+            v.fuel_type,
+            v.transmission,
+            v.exterior_color,
+            v.car_rating,
+            v.vehicle_url,
+            v.condition,
             COALESCE(
                 (SELECT image_url FROM raw.vehicle_images vi 
                  WHERE vi.vehicle_id = v.vehicle_id 
-                 ORDER BY vi.id LIMIT 1), 
+                 ORDER BY vi.id LIMIT 1),
                 ''
-            ) as image_url, 
-            '' as seller_name, 
-            '' as seller_phone, 
-            v.created_at::text as posted_date
-        FROM {table_name} v
+            ) as image_url
+        FROM raw.used_vehicles v
         WHERE {where_clause}
         ORDER BY {sort_column} {order} NULLS LAST
         LIMIT :limit OFFSET :offset
@@ -150,27 +142,20 @@ async def search_vehicles(
     vehicles = []
     
     for row in result:
-        vehicles.append(VehicleResponse(
-            id=row[0],
-            url=row[1],
-            title=row[2],
-            price=row[3],
-            brand=row[4],
-            model=row[5],
-            year=row[6],
-            mileage=row[7],
-            fuel_type=row[8],
-            transmission=row[9],
-            body_type=row[10],
-            color=row[11],
-            seats=row[12],
-            origin=row[13],
-            location=row[14],
-            description=row[15],
-            image_url=row[16],
-            seller_name=row[17],
-            seller_phone=row[18],
-            posted_date=row[19]
+        vehicles.append(VehicleListItem(
+            vehicle_id=row[0],
+            title=row[1],
+            brand=row[2],
+            car_model=row[3],
+            price=float(row[4]) if row[4] else None,
+            mileage_str=row[5],
+            fuel_type=row[6],
+            transmission=row[7],
+            exterior_color=row[8],
+            car_rating=float(row[9]) if row[9] else None,
+            vehicle_url=row[10],
+            condition=row[11],
+            image_url=row[12]
         ))
     
     total_pages = math.ceil(total / page_size) if total > 0 else 0

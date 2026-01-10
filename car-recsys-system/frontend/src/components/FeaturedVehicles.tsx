@@ -1,11 +1,13 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import VehicleCard from "./VehicleCard";
-import { vehicles } from "@/data/vehicles";
 import { Button } from "@/components/ui/button";
+import { usePopularVehicles } from "@/hooks/useApi";
 
 const FeaturedVehicles = () => {
-  const featuredVehicles = vehicles.slice(0, 4);
+  const { data, isLoading, error } = usePopularVehicles(8);
+  
+  const featuredVehicles = data?.recommendations?.slice(0, 4) || [];
 
   return (
     <section className="py-24 bg-background relative overflow-hidden">
@@ -40,18 +42,42 @@ const FeaturedVehicles = () => {
           </Link>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            <span className="ml-3 text-muted-foreground">Loading featured vehicles...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">Unable to load vehicles. Please try again later.</p>
+          </div>
+        )}
+
         {/* Vehicle Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredVehicles.map((vehicle, index) => (
-            <div
-              key={vehicle.id}
-              className="animate-fade-in opacity-0"
-              style={{ animationDelay: `${0.1 + index * 0.1}s` }}
-            >
-              <VehicleCard {...vehicle} />
-            </div>
-          ))}
-        </div>
+        {!isLoading && !error && featuredVehicles.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featuredVehicles.map((item, index) => (
+              <div
+                key={item.vehicle.vehicle_id}
+                className="animate-fade-in opacity-0"
+                style={{ animationDelay: `${0.1 + index * 0.1}s`, animationFillMode: 'forwards' }}
+              >
+                <VehicleCard vehicle={item.vehicle} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !error && featuredVehicles.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-muted-foreground">No featured vehicles available at the moment.</p>
+          </div>
+        )}
 
         {/* Bottom CTA */}
         <div className="mt-20 text-center">
