@@ -18,7 +18,7 @@ COPY . .
 EXPOSE 3000
 
 # Environment variable for API
-ENV VITE_API_URL=http://localhost:8000/api/v1
+ENV VITE_API_URL=http://localhost:8000
 
 # Development mode - run with hot reload
 CMD ["npx", "vite", "--host", "0.0.0.0", "--port", "3000"]

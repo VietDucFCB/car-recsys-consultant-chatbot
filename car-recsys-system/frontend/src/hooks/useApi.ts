@@ -7,6 +7,7 @@ import {
   recommendationsApi,
   interactionsApi,
   authApi,
+  chatApi,
   SearchParams,
   SearchResponse,
   Vehicle,
@@ -16,6 +17,11 @@ import {
   Favorite,
   User,
   AuthResponse,
+  ChatConversation,
+  ChatMessage,
+  ChatResponse,
+  Review,
+  Seller,
   storeAuthData,
   trackVehicleView,
 } from '@/lib/api';
@@ -28,6 +34,8 @@ export const queryKeys = {
     search: (params: SearchParams) => ['vehicles', 'search', params] as const,
     detail: (id: string) => ['vehicles', id] as const,
     listings: (limit: number, offset: number) => ['vehicles', 'listings', limit, offset] as const,
+    reviews: (id: string) => ['vehicles', 'reviews', id] as const,
+    seller: (id: string) => ['vehicles', 'seller', id] as const,
   },
   recommendations: {
     all: ['recommendations'] as const,
@@ -87,6 +95,30 @@ export function useVehicleListings(limit = 10, offset = 0) {
     queryKey: queryKeys.vehicles.listings(limit, offset),
     queryFn: () => vehiclesApi.getListings(limit, offset),
     staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Get vehicle reviews
+ */
+export function useVehicleReviews(vehicleId: string | undefined, limit = 10) {
+  return useQuery<Review[]>({
+    queryKey: queryKeys.vehicles.reviews(vehicleId ?? ''),
+    queryFn: () => vehiclesApi.getReviews(vehicleId!, limit),
+    enabled: !!vehicleId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+/**
+ * Get vehicle seller info
+ */
+export function useVehicleSeller(vehicleId: string | undefined) {
+  return useQuery<Seller | null>({
+    queryKey: queryKeys.vehicles.seller(vehicleId ?? ''),
+    queryFn: () => vehiclesApi.getSeller(vehicleId!),
+    enabled: !!vehicleId,
+    staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }
 
@@ -254,4 +286,70 @@ export function useLogout() {
     queryClient.clear();
     window.location.href = '/';
   };
+}
+
+// ============== CHAT HOOKS ==============
+
+export const chatKeys = {
+  conversations: ['chat', 'conversations'] as const,
+  conversation: (id: string) => ['chat', 'conversation', id] as const,
+};
+
+/**
+ * Get user's chat conversations
+ */
+export function useChatConversations(limit = 20) {
+  return useQuery<ChatConversation[]>({
+    queryKey: chatKeys.conversations,
+    queryFn: () => chatApi.getConversations(limit),
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/**
+ * Get messages for a specific conversation
+ */
+export function useChatMessages(conversationId: string | null) {
+  return useQuery<ChatMessage[]>({
+    queryKey: chatKeys.conversation(conversationId || ''),
+    queryFn: () => chatApi.getConversationMessages(conversationId!),
+    enabled: !!conversationId,
+    staleTime: 1000 * 60 * 1, // 1 minute
+  });
+}
+
+/**
+ * Send a chat message
+ */
+export function useSendMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ChatResponse, Error, { message: string; conversationId?: string }>({
+    mutationFn: ({ message, conversationId }) => 
+      chatApi.sendMessage(message, conversationId),
+    onSuccess: (data) => {
+      // Invalidate conversations list
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations });
+      // Invalidate specific conversation messages
+      if (data.conversation_id) {
+        queryClient.invalidateQueries({ 
+          queryKey: chatKeys.conversation(data.conversation_id) 
+        });
+      }
+    },
+  });
+}
+
+/**
+ * Delete a chat conversation
+ */
+export function useDeleteConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, string>({
+    mutationFn: chatApi.deleteConversation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: chatKeys.conversations });
+    },
+  });
 }

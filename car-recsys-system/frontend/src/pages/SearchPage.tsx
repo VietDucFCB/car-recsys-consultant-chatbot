@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
@@ -44,6 +44,30 @@ const SearchPage = () => {
   const [sortOrder, setSortOrder] = useState(searchParams.get("order") || "desc");
   const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
+  // Debounce timer ref for price inputs
+  const priceDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const [debouncedPriceMin, setDebouncedPriceMin] = useState(priceMin);
+  const [debouncedPriceMax, setDebouncedPriceMax] = useState(priceMax);
+  
+  // Debounce price changes
+  useEffect(() => {
+    if (priceDebounceRef.current) {
+      clearTimeout(priceDebounceRef.current);
+    }
+    priceDebounceRef.current = setTimeout(() => {
+      setDebouncedPriceMin(priceMin);
+      setDebouncedPriceMax(priceMax);
+      if (priceMin !== debouncedPriceMin || priceMax !== debouncedPriceMax) {
+        setPage(1);
+      }
+    }, 500);
+    return () => {
+      if (priceDebounceRef.current) {
+        clearTimeout(priceDebounceRef.current);
+      }
+    };
+  }, [priceMin, priceMax]);
 
   // Build API params
   const apiParams: SearchParams = {
@@ -51,8 +75,8 @@ const SearchPage = () => {
     brand: selectedBrand && selectedBrand !== "all" ? selectedBrand : undefined,
     fuel_type: selectedFuel && selectedFuel !== "all" ? selectedFuel : undefined,
     transmission: selectedTransmission && selectedTransmission !== "all" ? selectedTransmission : undefined,
-    price_min: priceMin ? parseFloat(priceMin.replace(/\D/g, "")) : undefined,
-    price_max: priceMax ? parseFloat(priceMax.replace(/\D/g, "")) : undefined,
+    price_min: debouncedPriceMin ? parseFloat(debouncedPriceMin.replace(/\D/g, "")) : undefined,
+    price_max: debouncedPriceMax ? parseFloat(debouncedPriceMax.replace(/\D/g, "")) : undefined,
     mileage_max: mileageMax && mileageMax !== "all" ? parseFloat(mileageMax) : undefined,
     sort_by: sortBy,
     sort_order: sortOrder,
@@ -62,22 +86,22 @@ const SearchPage = () => {
 
   const { data, isLoading, error } = useVehicleSearch(apiParams);
 
-  // Update URL params when filters change
+  // Update URL params when filters change (use debounced values for price)
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
     if (selectedBrand && selectedBrand !== "all") params.set("brand", selectedBrand);
     if (selectedFuel && selectedFuel !== "all") params.set("fuel", selectedFuel);
     if (selectedTransmission && selectedTransmission !== "all") params.set("transmission", selectedTransmission);
-    if (priceMin) params.set("price_min", priceMin);
-    if (priceMax) params.set("price_max", priceMax);
+    if (debouncedPriceMin) params.set("price_min", debouncedPriceMin);
+    if (debouncedPriceMax) params.set("price_max", debouncedPriceMax);
     if (mileageMax && mileageMax !== "all") params.set("mileage_max", mileageMax);
     if (sortBy !== "created_at") params.set("sort", sortBy);
     if (sortOrder !== "desc") params.set("order", sortOrder);
     if (page > 1) params.set("page", page.toString());
     
     setSearchParams(params, { replace: true });
-  }, [searchQuery, selectedBrand, selectedFuel, selectedTransmission, priceMin, priceMax, mileageMax, sortBy, sortOrder, page]);
+  }, [searchQuery, selectedBrand, selectedFuel, selectedTransmission, debouncedPriceMin, debouncedPriceMax, mileageMax, sortBy, sortOrder, page]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -120,14 +144,14 @@ const SearchPage = () => {
             type="text"
             placeholder="Min $"
             value={priceMin}
-            onChange={(e) => { setPriceMin(e.target.value); setPage(1); }}
+            onChange={(e) => setPriceMin(e.target.value)}
             className="h-10"
           />
           <Input
             type="text"
             placeholder="Max $"
             value={priceMax}
-            onChange={(e) => { setPriceMax(e.target.value); setPage(1); }}
+            onChange={(e) => setPriceMax(e.target.value)}
             className="h-10"
           />
         </div>

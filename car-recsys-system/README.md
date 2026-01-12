@@ -151,6 +151,74 @@ psql -h localhost -U admin -d car_recsys
 2. **user_interactions** - Lịch sử tương tác
 3. **user_favorites** - Xe yêu thích
 4. **user_searches** - Lịch sử tìm kiếm
+5. **chat_conversations** - Cuộc hội thoại chatbot
+6. **chat_messages** - Tin nhắn chat
+
+---
+
+## 🤖 AI Chatbot Setup
+
+Hệ thống tích hợp chatbot AI sử dụng GPT-4o-mini và Qdrant vector search.
+
+### Bước 1: Cấu hình OpenAI API Key
+
+```bash
+# Copy file env mẫu
+cp .env.example .env
+
+# Edit file .env và thêm OPENAI_API_KEY
+OPENAI_API_KEY=your-openai-api-key-here
+```
+
+### Bước 2: Khởi động Qdrant Vector Database
+
+```bash
+# Qdrant đã được include trong docker-compose
+docker-compose up -d qdrant
+```
+
+### Bước 3: Ingest dữ liệu xe vào Qdrant
+
+```bash
+# Chạy script ingest (cần OPENAI_API_KEY)
+cd backend
+python scripts/ingest_chatbot_data.py
+
+# Hoặc chỉ ingest một số lượng giới hạn để test
+python scripts/ingest_chatbot_data.py --limit 100
+```
+
+**Lưu ý:** Script sẽ tạo embeddings cho mỗi xe sử dụng `text-embedding-3-large` (3072 dimensions).
+Chi phí ước tính: ~$0.02/1000 vehicles
+
+### Bước 4: Khởi động Backend với Chatbot
+
+```bash
+# Khởi động backend
+docker-compose up -d backend
+
+# Hoặc chạy local
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+### Chatbot API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/chat/message` | POST | Gửi tin nhắn và nhận phản hồi |
+| `/api/v1/chat/conversations` | GET | Lấy danh sách cuộc hội thoại |
+| `/api/v1/chat/conversation/{id}` | GET | Lấy tin nhắn của 1 cuộc hội thoại |
+| `/api/v1/chat/conversation/{id}` | DELETE | Xóa cuộc hội thoại |
+| `/api/v1/chat/health` | GET | Kiểm tra trạng thái chatbot |
+
+### Frontend Chat Features
+
+- **Chat Popup:** Floating chat bubble ở góc phải màn hình
+- **Full Chat Page:** Trang chat đầy đủ tại `/chat`
+- **Conversation History:** Lưu trữ và hiển thị lịch sử chat (cần đăng nhập)
+- **Vehicle Cards:** Hiển thị xe được gợi ý inline trong chat
 
 ---
 

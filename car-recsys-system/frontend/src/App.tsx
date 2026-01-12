@@ -8,9 +8,12 @@ import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import VehicleDetailPage from "./pages/VehicleDetailPage";
+import ComparePage from "./pages/ComparePage";
 import SellPage from "./pages/SellPage";
 import LoginPage from "./pages/LoginPage";
+import ChatPage from "./pages/ChatPage";
 import NotFound from "./pages/NotFound";
+import ChatPopup from "./components/ChatPopup";
 
 const queryClient = new QueryClient();
 
@@ -26,11 +29,15 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/vehicle/:id" element={<VehicleDetailPage />} />
+              <Route path="/vehicles/:id" element={<VehicleDetailPage />} />
+              <Route path="/compare" element={<ComparePage />} />
               <Route path="/sell" element={<SellPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/chat" element={<ChatPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <ChatPopup />
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

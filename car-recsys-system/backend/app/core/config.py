@@ -19,9 +19,15 @@ class Settings(BaseSettings):
         "postgresql://admin:admin123@localhost:5432/car_recsys"
     )
     
-    # Search & Vector
-    ELASTICSEARCH_URL: str = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
+    # Vector Database
     QDRANT_URL: str = os.getenv("QDRANT_URL", "http://localhost:6333")
+    QDRANT_COLLECTION: str = os.getenv("QDRANT_COLLECTION", "car_chatbot_vectors")
+    
+    # OpenAI
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+    OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-large")
+    OPENAI_EMBEDDING_DIM: int = 3072  # text-embedding-3-large dimension
     
     # Cache
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")

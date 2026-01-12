@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Heart,
@@ -18,6 +18,12 @@ import {
   Loader2,
   AlertCircle,
   ImageOff,
+  GitCompare,
+  MapPin,
+  Clock,
+  User,
+  Quote,
+  ExternalLink,
 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -25,16 +31,19 @@ import VehicleCard from "@/components/VehicleCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useVehicleDetail, useSimilarVehicles, useAddFavorite, useRemoveFavorite, useFavorites } from "@/hooks/useApi";
+import { useVehicleDetail, useSimilarVehicles, useAddFavorite, useRemoveFavorite, useFavorites, useVehicleReviews, useVehicleSeller } from "@/hooks/useApi";
 import { formatPrice, isAuthenticated, trackVehicleView } from "@/lib/api";
 
 const VehicleDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState<{ [key: number]: boolean }>({});
   
   const { data: vehicle, isLoading, error } = useVehicleDetail(id);
   const { data: similarData, isLoading: loadingSimilar } = useSimilarVehicles(id, 6);
+  const { data: reviews, isLoading: loadingReviews } = useVehicleReviews(id, 10);
+  const { data: seller, isLoading: loadingSeller } = useVehicleSeller(id);
   const { data: favorites } = useFavorites();
   const addFavorite = useAddFavorite();
   const removeFavorite = useRemoveFavorite();
@@ -269,6 +278,15 @@ const VehicleDetailPage = () => {
                     >
                       <Heart className={`h-5 w-5 ${isFavorite ? "fill-accent text-accent" : ""}`} />
                     </Button>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      className="rounded-full h-11 w-11"
+                      onClick={() => navigate(`/compare?v1=${vehicle.vehicle_id}`)}
+                      title="Compare with another vehicle"
+                    >
+                      <GitCompare className="h-5 w-5" />
+                    </Button>
                     <Button variant="outline" size="icon" className="rounded-full h-11 w-11">
                       <Share2 className="h-5 w-5" />
                     </Button>
@@ -376,8 +394,177 @@ const VehicleDetailPage = () => {
                   Contact Seller
                 </Button>
               </div>
+
+              {/* Compare Button */}
+              <Button 
+                variant="outline" 
+                className="w-full h-12 rounded-xl border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+                onClick={() => navigate(`/compare?v1=${vehicle.vehicle_id}`)}
+              >
+                <GitCompare className="h-4 w-4 mr-2" />
+                Compare with Another Vehicle
+              </Button>
+
+              {/* Seller Information */}
+              {seller && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold mb-4 flex items-center gap-2">
+                      <User className="h-5 w-5 text-accent" />
+                      Dealer Information
+                    </h3>
+                    <div className="bg-card border border-border rounded-xl overflow-hidden">
+                      {/* Dealer Image Placeholder */}
+                      <div className="h-32 bg-gradient-to-br from-secondary to-muted flex items-center justify-center">
+                        <Car className="h-12 w-12 text-muted-foreground/50" />
+                      </div>
+                      
+                      <div className="p-4 space-y-3">
+                        {/* Dealer Name & Rating */}
+                        <div>
+                          <p className="font-semibold text-foreground text-lg">{seller.seller_name}</p>
+                          {seller.seller_rating && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-0.5">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star 
+                                    key={star} 
+                                    className={`h-4 w-4 ${
+                                      star <= Math.round(seller.seller_rating!) 
+                                        ? 'text-purple-500 fill-purple-500' 
+                                        : 'text-muted-foreground'
+                                    }`} 
+                                  />
+                                ))}
+                              </div>
+                              <span className="font-medium text-sm">{seller.seller_rating.toFixed(1)}</span>
+                              {seller.seller_rating_count && (
+                                <span className="text-muted-foreground text-sm">
+                                  · {seller.seller_rating_count.toLocaleString()} reviews
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Business Hours Status */}
+                        {seller.hours_monday && (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-red-500 border-red-500">Closed</Badge>
+                            <span className="text-sm text-muted-foreground">Opens 8:30am</span>
+                          </div>
+                        )}
+                        
+                        {/* Address */}
+                        {(seller.seller_address || seller.seller_city) && (
+                          <div className="flex items-start gap-2 text-sm pt-2 border-t border-border">
+                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <span className="text-muted-foreground">
+                              {seller.seller_address && `${seller.seller_address}, `}
+                              {seller.seller_city && `${seller.seller_city}, `}
+                              {seller.seller_state} {seller.seller_zip}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Website */}
+                        {seller.seller_website && (
+                          <a 
+                            href={seller.seller_website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-accent hover:underline"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            Visit dealership website
+                          </a>
+                        )}
+                        
+                        {/* Phone */}
+                        {seller.seller_phone && (
+                          <a 
+                            href={`tel:${seller.seller_phone}`}
+                            className="flex items-center gap-2 text-sm text-foreground hover:text-accent"
+                          >
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            {seller.seller_phone}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
+
+          {/* Customer Reviews Section */}
+          {reviews && reviews.length > 0 && (
+            <div className="mt-16">
+              <h2 className="font-heading text-2xl md:text-3xl font-semibold text-foreground mb-8 flex items-center gap-3">
+                <Quote className="h-6 w-6 text-accent" />
+                Customer Reviews ({reviews.length})
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {reviews.map((review, index) => (
+                  <div key={index} className="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-shadow">
+                    {/* Header with user info and date */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                          <User className="h-5 w-5 text-accent" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-foreground">By {review.user_name || 'Anonymous'}</p>
+                          {review.user_location && (
+                            <p className="text-xs text-muted-foreground">{review.user_location}</p>
+                          )}
+                        </div>
+                      </div>
+                      {review.review_time && (
+                        <span className="text-xs text-muted-foreground">{review.review_time}</span>
+                      )}
+                    </div>
+                    
+                    {/* Star Rating */}
+                    {review.overall_rating && (
+                      <div className="flex items-center gap-1 mb-3">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`h-5 w-5 ${
+                              star <= review.overall_rating! 
+                                ? 'text-purple-500 fill-purple-500' 
+                                : 'text-muted-foreground'
+                            }`} 
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Review Text */}
+                    {review.review_text && (
+                      <p className="text-foreground text-sm leading-relaxed">
+                        <span className="font-medium">{review.review_text.slice(0, 60)}</span>
+                        {review.review_text.length > 60 && (
+                          <span className="text-muted-foreground"> {review.review_text.slice(60)}</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {/* See all reviews link */}
+              <div className="text-center mt-6">
+                <Button variant="link" className="text-accent gap-2">
+                  See all reviews
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Similar Vehicles Section */}
           {similarData && similarData.recommendations.length > 0 && (

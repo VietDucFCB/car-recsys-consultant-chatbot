@@ -8,6 +8,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  Car,
 } from "lucide-react";
 
 const Footer = () => {
@@ -79,9 +80,10 @@ const Footer = () => {
           <div className="relative p-8 md:p-10">
             {/* Brand section */}
             <div className="mb-12">
-              <Link to="/" className="inline-block mb-6">
+              <Link to="/" className="inline-flex items-center gap-2 mb-6">
+                <Car className="h-8 w-8 text-primary" />
                 <span className="font-heading text-2xl font-semibold text-foreground">
-                  Car<span className="text-accent">Market</span>
+                  CarFinder
                 </span>
               </Link>
               <p className="text-muted-foreground mb-6 max-w-sm leading-relaxed">
@@ -90,11 +92,11 @@ const Footer = () => {
               </p>
               <div className="space-y-3">
                 <a
-                  href="mailto:hello@carmarket.com"
+                  href="mailto:hello@carfinder.com"
                   className="flex items-center gap-3 text-sm text-muted-foreground hover:text-accent transition-colors"
                 >
                   <Mail className="h-4 w-4" />
-                  hello@carmarket.com
+                  hello@carfinder.com
                 </a>
                 <a
                   href="tel:+15550123456"
@@ -174,7 +176,7 @@ const Footer = () => {
       <div className="relative border-t border-border">
         <div className="container mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {currentYear} CarMarket. All rights reserved.
+            © {currentYear} CarFinder. All rights reserved.
           </p>
 
           {/* Social links */}

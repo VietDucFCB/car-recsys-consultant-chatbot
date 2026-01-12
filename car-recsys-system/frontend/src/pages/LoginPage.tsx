@@ -53,14 +53,19 @@ const LoginPage = () => {
         storeAuthData(response);
         toast({
           title: "Account created!",
-          description: "Welcome to CarMarket!",
+          description: "Welcome to CarFinder!",
         });
       }
       navigate("/");
     } catch (error: any) {
-      const message = error?.response?.data?.detail || "Authentication failed. Please try again.";
+      let message = "Authentication failed. Please try again.";
+      if (error?.message) {
+        message = error.message;
+      } else if (error?.response?.data?.detail) {
+        message = error.response.data.detail;
+      }
       toast({
-        title: "Error",
+        title: isLogin ? "Login Failed" : "Registration Failed",
         description: message,
         variant: "destructive",
       });
@@ -76,8 +81,9 @@ const LoginPage = () => {
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
           <Link to="/" className="inline-flex items-center gap-2 text-foreground group">
+            <Car className="h-8 w-8 text-primary" />
             <span className="font-heading text-2xl font-semibold">
-              Car<span className="text-accent">Market</span>
+              CarFinder
             </span>
           </Link>
 

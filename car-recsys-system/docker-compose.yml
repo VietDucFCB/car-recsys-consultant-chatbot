@@ -58,27 +58,6 @@ services:
     restart: unless-stopped
     command: --data /var/opt/bytebase --port 8080
 
-  # Elasticsearch - Search Engine
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: car-recsys-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    networks:
-      - car-recsys-network
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   # Qdrant - Vector Database
   qdrant:
     image: qdrant/qdrant:latest
@@ -122,12 +101,15 @@ services:
     container_name: car-recsys-backend
     environment:
       - DATABASE_URL=postgresql://admin:admin123@postgres:5432/car_recsys
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
       - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=car_chatbot_vectors
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY=your-secret-key-change-in-production
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=gpt-4o-mini
+      - OPENAI_EMBEDDING_MODEL=text-embedding-3-large
     ports:
       - "8000:8000"
     volumes:
@@ -135,7 +117,6 @@ services:
       - ../datasets:/app/datasets
     depends_on:
       - postgres
-      - elasticsearch
       - qdrant
       - redis
     networks:
@@ -150,14 +131,12 @@ services:
     container_name: car-recsys-etl
     environment:
       - DATABASE_URL=postgresql://admin:admin123@postgres:5432/car_recsys
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
       - QDRANT_URL=http://qdrant:6333
     volumes:
       - ./etl:/app
       - ../datasets:/app/datasets
     depends_on:
       - postgres
-      - elasticsearch
       - qdrant
     networks:
       - car-recsys-network
@@ -172,10 +151,10 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_API_URL=http://localhost:8000/api/v1
+      - VITE_API_URL=http://localhost:8000
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
     networks:
@@ -187,7 +166,6 @@ networks:
 
 volumes:
   postgres_data:
-  elasticsearch_data:
   qdrant_data:
   redis_data:
   bytebase_data:

@@ -9,7 +9,7 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>CarMarket - Luxury Cars for Sale | Find Your Dream Car</title>
+        <title>CarFinder - Find Your Dream Car | AI-Powered Car Search</title>
         <meta
           name="description"
           content="Explore our curated collection of luxury vehicles, supercars, and exotic automobiles. Find your dream car from trusted sellers worldwide."

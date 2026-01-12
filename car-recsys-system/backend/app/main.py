@@ -9,7 +9,7 @@ import time
 import logging
 
 from app.core.config import settings
-from app.api.v1 import auth, search, listings, recommendations, feedback, interactions
+from app.api.v1 import auth, search, listings, recommendations, feedback, interactions, chat, reviews
 
 # Configure logging
 logging.basicConfig(
@@ -94,6 +94,8 @@ app.include_router(search.router, prefix="/api/v1", tags=["Search"])
 app.include_router(listings.router, prefix="/api/v1", tags=["Listings"])
 app.include_router(recommendations.router, prefix="/api/v1/reco", tags=["Recommendations"])
 app.include_router(feedback.router, prefix="/api/v1", tags=["Feedback"])
+app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat"])
+app.include_router(reviews.router, prefix="/api/v1", tags=["Reviews"])
 
 # Startup event
 @app.on_event("startup")
