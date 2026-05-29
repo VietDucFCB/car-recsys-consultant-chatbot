@@ -9,6 +9,8 @@ with ranked as (
         car_model_slug,
         payload,
         crawled_at,
+        crawl_date,
+        source,
         gcs_path,
         row_number() over (
             partition by vin
@@ -24,6 +26,8 @@ select
     car_model_slug,
     payload,
     crawled_at,
+    crawl_date,
+    source,
     gcs_path
 from ranked
 where rn = 1

@@ -42,6 +42,8 @@ select
         as has_open_recall,
 
     payload->'post'->'warranty_des'                   as warranty,   -- nullable JSONB
+    crawl_date,
+    source,
     crawled_at,
     gcs_path
 from raw
