@@ -13,8 +13,8 @@ import json
 import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Optional
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,6 @@ class BronzeLoaderConfig:
     gcp_project: Optional[str] = None
     download_workers: int = 16
     batch_size: int = 500
-    extra: dict[str, Any] = field(default_factory=dict)
 
 
 def _page_from_path(blob_name: str) -> Optional[int]:
