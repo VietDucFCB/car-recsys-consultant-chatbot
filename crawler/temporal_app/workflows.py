@@ -190,11 +190,15 @@ class MLWorkflow:
     """Recompute item-item similarity + re-embed vehicles to Qdrant.
 
     The two activities are independent → run them concurrently.
+    ``crawl_date`` (YYYY-MM-DD) is forwarded to embed_vehicles_activity as the
+    ``since_date`` watermark so only vehicles updated that day are re-embedded.
+    When omitted the workflow uses today's date (workflow.now()).
     """
 
     @workflow.run
-    async def run(self) -> MLResult:
-        workflow.logger.info("ML starting")
+    async def run(self, crawl_date: str = "") -> MLResult:
+        dt = crawl_date or workflow.now().strftime("%Y-%m-%d")
+        workflow.logger.info("ML starting dt=%s", dt)
 
         sim_task = workflow.execute_activity(
             compute_item_similarity_activity,
@@ -203,6 +207,7 @@ class MLWorkflow:
         )
         embed_task = workflow.execute_activity(
             embed_vehicles_activity,
+            dt,
             start_to_close_timeout=timedelta(hours=1),
             retry_policy=RetryPolicy(maximum_attempts=3),
         )

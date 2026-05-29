@@ -71,11 +71,19 @@ def embed_vehicles(
     embedding_model: str,
     embedding_dim: int,
     since: Optional[str] = None,
+    since_date: Optional[str] = None,
     limit: Optional[int] = None,
     batch_size: int = 100,
 ) -> dict[str, int]:
-    """Embed gold.vehicles and upsert into Qdrant. `since` = ISO watermark for
-    an incremental run (only vehicles crawled after it)."""
+    """Embed gold.vehicles and upsert into Qdrant.
+
+    ``since_date`` (preferred) filters on ``gold.vehicles.last_updated_date``
+    (the incremental watermark added in Task 6) and is used by the ML workflow
+    to re-embed only vehicles updated in the current crawl run.
+
+    ``since`` (legacy) filtered on ``crawled_at``; kept for backward
+    compatibility but ``since_date`` takes precedence when both are supplied.
+    """
     import psycopg2
     import psycopg2.extras
     from openai import OpenAI
@@ -93,7 +101,15 @@ def embed_vehicles(
 
     conn = psycopg2.connect(warehouse_dsn)
     try:
-        where = "WHERE crawled_at > %(since)s" if since else ""
+        params: dict[str, Any] = {"limit": limit}
+        if since_date:
+            where = "WHERE last_updated_date >= %(since_date)s"
+            params["since_date"] = since_date
+        elif since:
+            where = "WHERE crawled_at > %(since)s"
+            params["since"] = since
+        else:
+            where = ""
         lim = "LIMIT %(limit)s" if limit else ""
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -103,14 +119,14 @@ def embed_vehicles(
                        exterior_color, engine, mpg, car_rating,
                        seller_name, destination, primary_image_url
                 FROM gold.vehicles {where}
-                ORDER BY crawled_at DESC NULLS LAST {lim}
+                ORDER BY last_updated_date DESC NULLS LAST {lim}
                 """,
-                {"since": since, "limit": limit},
+                params,
             )
             vehicles = [dict(r) for r in cur.fetchall()]
 
         if not vehicles:
-            log.info("no vehicles to embed (since=%s)", since)
+            log.info("no vehicles to embed (since_date=%s since=%s)", since_date, since)
             return {"embedded": 0}
 
         ids = [v["vehicle_id"] for v in vehicles]

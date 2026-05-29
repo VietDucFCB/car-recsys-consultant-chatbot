@@ -240,8 +240,8 @@ def compute_item_similarity_activity() -> SimilarityResult:
 
 
 @activity.defn(name="embed_vehicles")
-def embed_vehicles_activity() -> EmbedResult:
-    """gold.vehicles → Qdrant (shared by chatbot + VectorRecaller)."""
+def embed_vehicles_activity(crawl_date: str = "") -> EmbedResult:
+    """gold.vehicles changed on crawl_date → Qdrant (chatbot + VectorRecaller)."""
     from temporal_app.pipeline import embed_vehicles
 
     api_key = os.environ.get("OPENAI_API_KEY", "")
@@ -258,6 +258,7 @@ def embed_vehicles_activity() -> EmbedResult:
             "OPENAI_EMBEDDING_MODEL", "text-embedding-3-large"
         ),
         embedding_dim=int(os.environ.get("OPENAI_EMBEDDING_DIM", "3072")),
+        since_date=crawl_date or None,
     )
-    activity.logger.info("embed_vehicles: %s", result)
+    activity.logger.info("embed_vehicles(since_date=%s): %s", crawl_date, result)
     return EmbedResult(embedded=result.get("embedded", 0))
