@@ -1,14 +1,17 @@
 # Architecture Diagrams
 
-Sơ đồ kiến trúc Car Recommendation System (vẽ bằng Excalidraw). Click link để mở,
-chỉnh sửa hoặc export ảnh.
+Sơ đồ kiến trúc Car Recommendation System.
 
-| # | Diagram | Mở Excalidraw |
-|---|---------|---------------|
-| 1 | **Kiến trúc tổng thể** — host crawler + Docker stack + data flow | [mở](https://excalidraw.com/#json=iPcpKCC70WF8Y6_n24v7Z,lpdv-TKixS6fvZYP6wO3YQ) |
-| 2 | **Temporal pipeline** — WeeklyPipeline chain crawl→transform→ml | [mở](https://excalidraw.com/#json=IC_mqEJKI8Gut7J42THkk,xf2H9jeExFxfRPqzQH2d9Q) |
-| 3 | **dbt medallion** — bronze → silver (3NF) → gold (marts) | [mở](https://excalidraw.com/#json=AiuvjKRya8WtA_Tlw92bL,y7US-pb8T_jEMOYanLPOkA) |
-| 4 | **Recommendation + Chatbot** — multi-stage hybrid + RAG hybrid | [mở](https://excalidraw.com/#json=YoSxOwwzeW9Ki893pZ6Pq,Y1O-jcWr48JT1wyCY-RfhA) |
+> **Nên dùng [diagrams.md](diagrams.md)** — bản **Mermaid**, render trực tiếp trên GitHub
+> với đầy đủ label + màu. (Bản Excalidraw bên dưới đẹp khi vẽ interactive nhưng export ra
+> link bị mất chữ trong shape — chỉ dùng nếu bạn muốn chỉnh layout thủ công.)
+
+| # | Diagram | Mermaid (khuyến nghị) | Excalidraw (interactive) |
+|---|---------|----------------------|--------------------------|
+| 1 | Kiến trúc tổng thể | [diagrams.md](diagrams.md#1-kiến-trúc-tổng-thể) | [mở](https://excalidraw.com/#json=iPcpKCC70WF8Y6_n24v7Z,lpdv-TKixS6fvZYP6wO3YQ) |
+| 2 | Temporal pipeline | [diagrams.md](diagrams.md#2-temporal-pipeline--weeklypipeline) | [mở](https://excalidraw.com/#json=IC_mqEJKI8Gut7J42THkk,xf2H9jeExFxfRPqzQH2d9Q) |
+| 3 | dbt medallion | [diagrams.md](diagrams.md#3-dbt-medallion--data-flow) | [mở](https://excalidraw.com/#json=AiuvjKRya8WtA_Tlw92bL,y7US-pb8T_jEMOYanLPOkA) |
+| 4 | Recommendation + Chatbot | [diagrams.md](diagrams.md#4-recommendation-engine-multi-stage-hybrid) | [mở](https://excalidraw.com/#json=YoSxOwwzeW9Ki893pZ6Pq,Y1O-jcWr48JT1wyCY-RfhA) |
 
 ---
 
