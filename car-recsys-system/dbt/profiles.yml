@@ -16,4 +16,5 @@ car_recsys:
       schema: gold              # default target schema; overridden per-layer
       threads: 4
       keepalives_idle: 0
-      sslmode: prefer
+      # 'prefer' for local; set DBT_PG_SSLMODE=require for Cloud SQL (SSL enforced).
+      sslmode: "{{ env_var('DBT_PG_SSLMODE', 'prefer') }}"
