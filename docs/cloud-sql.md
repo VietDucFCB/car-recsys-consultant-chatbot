@@ -157,14 +157,38 @@ gcloud sql instances patch $I --activation-policy=ALWAYS $P   # START
 
 ---
 
-## 7. Trạng thái hiện tại (2026-05-30)
+## 7. Backfill data INITIAL (đã làm — 1 lần)
+
+Data Colab gốc ở `gs://bronze-car-recsys/raw_data/` (7065 JSON, không có `dt=`)
+đã được load 1 lần vào Cloud SQL với `source='initial'`, rồi dbt build.
+
+```bash
+# 1. load full bucket → bronze (source='initial'):
+set -a; . car-recsys-system/.env.cloud; set +a
+GCS_BUCKET=bronze-car-recsys \
+  crawler/.venv/bin/python -m temporal_app.scripts.backfill_initial
+# → inserted 7044 (idempotent qua file_hash)
+
+# 2. dbt build → silver + gold:
+docker run --rm -v "$PWD/car-recsys-system/dbt:/app/dbt" \
+  -e DBT_PG_HOST=34.66.189.61 -e DBT_PG_USER=admin -e DBT_PG_PASSWORD=<PASS> \
+  -e DBT_PG_DBNAME=car_recsys -e DBT_PG_SSLMODE=require \
+  car-pipeline-worker:latest dbt build --profiles-dir /app/dbt --project-dir /app/dbt
+# → PASS=68 / 0 error
+```
+
+Kết quả gold: vehicles **5318** · car_models 1214 · sellers 2255 · reviews 9918
+· vehicle_features 111137 · vehicle_images 26516.
+
+> Backfill chạy TRÊN LOCAL (đọc bucket bằng ADC, ghi Cloud SQL qua public IP).
+> Cùng project GCP nên ADC có quyền đọc bucket. Idempotent — chạy lại an toàn.
+
+## 8. Trạng thái hiện tại (2026-05-30)
 
 - ✅ Connection (public IP + authorized network) — verified
 - ✅ Schema init (bronze/silver/gold giống local) — verified
 - ✅ User `admin` + quyền CREATE — verified
 - ✅ dbt connect cloud (sslmode=require) — verified
-- ⬜ Data chưa có trên cloud (DB rỗng — bronze 0 rows)
-- ⬜ Pipeline chưa trỏ cloud (vẫn ghi local theo mặc định)
-
-**Next có thể làm:** trigger transform/ml với `.env.cloud` để pipeline ghi lên
-cloud, hoặc migrate data local→cloud bằng pg_dump.
+- ✅ **Data INITIAL đã load + transform** (gold.vehicles=5318) — verified
+- ⬜ Incremental pipeline (weekly) chưa trỏ cloud — vẫn ghi local mặc định
+- ⬜ ML (embeddings/similarity) chưa chạy trên cloud (cần OPENAI_API_KEY)
