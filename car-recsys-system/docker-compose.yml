@@ -124,22 +124,20 @@ services:
       - car-recsys-network
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-  # Frontend (Vite + React)
-  # Excluded from the default `docker compose up` — run it on the host with
-  # `npm run dev`. Start the container instead with `--profile frontend`.
+  # Frontend (Vite + React) — production nginx image (same as Cloud Run).
+  # Excluded from the default `docker compose up` — for live-reload dev run it on
+  # the host with `npm run dev`. Start the built container with `--profile frontend`.
+  # VITE_API_URL is baked at build time (Vite inlines it); nginx serves on 8080.
   frontend:
     profiles: ["frontend"]
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
     container_name: car-recsys-frontend
     ports:
-      - "3000:3000"
-    environment:
-      - VITE_API_URL=http://localhost:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "3000:8080"
     depends_on:
       - backend
     networks:
