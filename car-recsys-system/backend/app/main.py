@@ -103,10 +103,17 @@ async def startup_event():
     logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
-    
-    # Initialize connections (database, redis, etc.)
-    # This will be implemented in the services
-    
+
+    # Create app-owned tables if missing. Non-fatal: the container must still
+    # boot (and pass Cloud Run's health check) even if the DB is briefly
+    # unreachable at startup.
+    try:
+        from app.core.database import Base, engine
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables ensured")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not ensure database tables at startup: %s", exc)
+
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():

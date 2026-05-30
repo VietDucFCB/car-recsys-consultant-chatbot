@@ -14,9 +14,6 @@ from app.schemas.vehicle import VehicleResponse
 
 router = APIRouter()
 
-# Create tables if not exist
-Base.metadata.create_all(bind=engine)
-
 
 @router.post("/feedback", response_model=InteractionResponse, status_code=status.HTTP_201_CREATED)
 async def submit_feedback(

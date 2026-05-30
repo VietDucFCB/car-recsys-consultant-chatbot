@@ -19,9 +19,6 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
 
 router = APIRouter()
 
-# Create tables if not exist
-Base.metadata.create_all(bind=engine)
-
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: Session = Depends(get_db)):
