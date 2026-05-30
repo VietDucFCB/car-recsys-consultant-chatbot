@@ -26,8 +26,9 @@ exploded as (
          ) as review
     where model_latest.rn = 1
       and jsonb_typeof(model_latest.reviews) = 'array'
-)
+),
 
+hashed as (
 select
     md5(
         car_model_slug
@@ -51,3 +52,10 @@ select
     {{ safe_numeric("review->'ratings_breakdown'->>'Exterior'") }}    as rb_exterior,
     {{ safe_numeric("review->'ratings_breakdown'->>'Reliability'") }} as rb_reliability
 from exploded
+)
+
+-- Same review can appear verbatim across multiple listings of a model (or a
+-- re-crawl), producing an identical content-hash. Keep one row per review_sk.
+select distinct on (review_sk) *
+from hashed
+order by review_sk
