@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 import uuid
 
-from app.core.database import get_db, Base, engine
+from app.core.database import get_db
 from app.core.security import (
     get_password_hash,
     verify_password,

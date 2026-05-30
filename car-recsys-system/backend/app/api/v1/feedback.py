@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
-from app.core.database import get_db, Base, engine
+from app.core.database import get_db
 from app.core.security import get_current_user_id
 from app.models.interaction import UserInteraction
 from app.models.vehicle import Vehicle
