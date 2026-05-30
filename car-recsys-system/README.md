@@ -1,354 +1,218 @@
-# 🚗 Car Recommendation System - Complete Setup Guide
+# 🚗 Car Recommendation System
 
-## 📋 Yêu cầu hệ thống
+Nền tảng gợi ý xe end-to-end: **crawl → transform → recommend → chatbot**, dựng trên
+kiến trúc medallion (bronze/silver/gold) với pipeline tự động hoá bằng **Temporal**.
 
-- **Docker** & **Docker Compose** (phiên bản mới nhất)
-- **Python 3.8+** (để chạy script load data)
-- **8GB RAM** trở lên (khuyến nghị)
-- **10GB dung lượng trống**
+- **Data pipeline** — crawl cars.com (host, Chrome+Xvfb) → GCS bronze → dbt silver/gold → ML.
+- **Recommendation** — multi-stage hybrid: candidate generation → ranking → MMR re-rank.
+- **Chatbot** — RAG hybrid (SQL constraints + Qdrant vector + RRF fusion) trên OpenAI.
+- **Orchestration** — Temporal self-host, 1 schedule weekly chạy chain crawl→transform→ml.
 
-## 🚀 Cài đặt nhanh (1 lệnh)
-
-```bash
-chmod +x setup.sh && ./setup.sh
-```
-
-Script sẽ tự động:
-1. ✅ Kiểm tra Docker đã cài đặt chưa
-2. ✅ Cài đặt Python dependencies (pandas, psycopg2-binary)
-3. ✅ Khởi động PostgreSQL, PostgREST, Bytebase
-4. ✅ Tạo database schemas
-5. ✅ Load ~720,000 dòng dữ liệu từ CSV
-6. ✅ Verify data integrity
-
-**Thời gian cài đặt:** ~5-10 phút (tùy tốc độ mạng & máy)
+> Kiến trúc chi tiết (Excalidraw): xem [docs/architecture/](../docs/architecture/).
 
 ---
 
-## 📦 Cài đặt thủ công (từng bước)
+## Service ports
 
-### Bước 1: Clone repository
+| Service       | Port | URL / mô tả                          |
+|---------------|------|--------------------------------------|
+| Frontend      | 3000 | Vite + React (chạy host: `npm run dev`) |
+| Backend API   | 8000 | FastAPI — http://localhost:8000/docs |
+| PostgreSQL    | 5432 | Warehouse (bronze/silver/gold) + Temporal DBs |
+| PostgREST     | 3001 | REST tự sinh từ Postgres             |
+| Qdrant        | 6333 | Vector DB (chatbot + reco)           |
+| Redis         | 6379 | Cache                                |
+| Temporal      | 7233 | gRPC — worker + scripts connect      |
+| Temporal UI   | 8233 | http://localhost:8233 — workflows, schedules |
+| Bytebase      | 8080 | DB browser (opt-in: `--profile tools`) |
 
-```bash
-git clone https://github.com/VietDucFCB/car-recsys-consultant-chatbot.git
-cd car-recsys-consultant-chatbot/car-recsys-system
+Mặc định `admin` / `admin123`, database `car_recsys`.
+
+---
+
+## Kiến trúc tổng thể
+
 ```
-
-### Bước 2: Chuẩn bị môi trường
-
-```bash
-# Cài đặt Python dependencies
-pip install pandas psycopg2-binary
-
-# Cấp quyền thực thi cho scripts
-chmod +x setup.sh reset_database.sh
-```
-
-### Bước 3: Khởi động hệ thống
-
-```bash
-# Khởi động containers (PostgreSQL + PostgREST + Bytebase)
-docker-compose up -d postgres postgrest bytebase
-
-# Đợi 20 giây để PostgreSQL khởi động hoàn toàn
-sleep 20
-```
-
-### Bước 4: Tạo database schema
-
-```bash
-# Tạo schemas và tables
-docker-compose exec -T postgres psql -U admin -d car_recsys < database/init/01-init-bytebase.sql
-docker-compose exec -T postgres psql -U admin -d car_recsys < database/init/02-create-schema.sql
-docker-compose exec -T postgres psql -U admin -d car_recsys < database/init/04-create-all-tables.sql
-```
-
-### Bước 5: Load dữ liệu
-
-```bash
-# Load ~720k dòng dữ liệu từ 7 file CSV
-python3 load_complete_database.py
-```
-
-**Output mong đợi:**
-```
-✅ used_vehicles                    :       5,508 rows  (Xe đã qua sử dụng)
-✅ new_vehicles                     :       2,660 rows  (Xe mới)
-✅ sellers                          :       2,862 rows  (Đại lý/Người bán)
-✅ reviews_ratings                  :     347,378 rows  (Đánh giá)
-✅ vehicle_features                 :      93,331 rows  (Tính năng)
-✅ vehicle_images                   :     259,124 rows  (Hình ảnh)
-✅ seller_vehicle_relationships     :       9,027 rows  (Quan hệ)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TỔNG CỘNG                        :     719,890 rows
-```
-
-### Bước 6: Kiểm tra hệ thống
-
-```bash
-python3 check_db_status.py
+                         ┌─────────────────── HOST ───────────────────┐
+  cars.com ──crawl──►    │ crawler worker (Chrome+Xvfb)  ./run_worker.sh│
+                         └──────────────┬──────────────────────────────┘
+                                        │ upload dt=YYYY-MM-DD/
+                                        ▼
+                            gs://incremental_raw/   (GCS bronze, date-partitioned)
+                                        │
+   ┌──────────────────────── DOCKER (docker compose up) ───────────────────────┐
+   │  Temporal (7233) + UI (8233)   ── orchestrate ──►  pipeline-worker         │
+   │       │                                              │ load_bronze         │
+   │       │ schedule weekly                              │ dbt build           │
+   │       ▼                                              │ refresh matviews    │
+   │  WeeklyPipeline: crawl → transform → ml              │ embed → Qdrant      │
+   │                                                      ▼                     │
+   │  PostgreSQL  bronze.raw_listings → silver.* → gold.*  ◄── dbt              │
+   │       ▲                                              │                     │
+   │       │                                              ▼                     │
+   │  backend (8000) ── reco + chatbot ──►  Qdrant (6333) · Redis (6379)        │
+   └──────────────────────────────────┬────────────────────────────────────────┘
+                                       │ /api
+                          frontend (3000, host npm run dev)
 ```
 
 ---
 
-## 🔗 Truy cập Services
+## Data pipeline (Temporal)
 
-Sau khi cài đặt xong, bạn có thể truy cập:
+Ba workflow, gom trong **một** workflow cha `WeeklyPipeline` chạy theo lịch:
 
-### 1. **PostgREST API** (Auto-generated REST API)
-- **URL:** http://localhost:3001
-- **OpenAPI Docs:** http://localhost:3001/
-- **Example:**
-  ```bash
-  # Lấy 5 xe
-  curl "http://localhost:3001/used_vehicles?limit=5"
-  
-  # Filter theo brand
-  curl "http://localhost:3001/used_vehicles?brand=eq.Toyota&limit=10"
-  
-  # Select specific columns
-  curl "http://localhost:3001/used_vehicles?select=vehicle_id,title,price,brand&limit=5"
-  ```
+| Workflow | Task queue | Worker | Các bước |
+|----------|-----------|--------|----------|
+| `WeeklyCrawl` | `car-crawler-tq` | **host** (Chrome) | crawl_links → scrape_details → upload_gcs |
+| `Transform`   | `car-pipeline-tq` | Docker | load_bronze → ensure_partition → dbt_build → refresh_matviews |
+| `ML`          | `car-pipeline-tq` | Docker | compute_item_similarity ∥ embed_vehicles |
+| `WeeklyPipeline` | `car-pipeline-tq` | Docker | crawl → transform → ml (fail-stop chain) |
 
-### 2. **Bytebase** (Database Management UI)
-- **URL:** http://localhost:8080
-- **Setup:**
-  1. Tạo admin account khi lần đầu truy cập
-  2. Add Instance với thông tin:
-     - **Host:** `postgres` (tên container)
-     - **Port:** `5432`
-     - **Database:** `car_recsys`
-     - **Username:** `bytebase_admin`
-     - **Password:** `bytebase123`
+- **2 worker**: crawl chạy host (cars.com cần Chrome thật bypass Cloudflare); transform/ml
+  chạy Docker (`pipeline-worker`, luôn online).
+- **Incremental**: mỗi run dùng `crawl_date`; GCS lưu `dt=YYYY-MM-DD/`, `load_bronze` chỉ
+  đọc đúng ngày đó (không quét full bucket).
+- **Schedule**: 1 cron `Mon 02:00` (đăng ký 1 lần) → Temporal tự chạy mãi.
 
-### 3. **PostgreSQL** (Direct Access)
+### dbt medallion
+
+```
+bronze.raw_listings  (JSONB landing, append-only, idempotent qua file_hash)
+        │ staging: stg_raw_latest (DISTINCT ON vin) → stg_listings (parse) → stg_*
+        ▼
+silver  dim_car_model · dim_seller · dim_feature · dim_listing_image
+        fct_listing (incremental delete+insert) · fct_model_rating · fct_model_review
+        bridge_listing_feature
+        ▼
+gold    vehicles (merge by VIN — current state, first/last seen)
+        vehicle_price_history (change-event log, partition by day)
+        car_models · sellers · reviews · vehicle_features · vehicle_images
+        + matviews: mv_popular_vehicles · mv_trending_models
+```
+
+**Idempotency**: bronze dedup theo `file_hash`; gold.vehicles upsert theo VIN; embeddings
+upsert theo `point_id = uuid5(vin)` → không trùng vector.
+
+---
+
+## Recommendation (multi-stage hybrid)
+
+`backend/app/services/reco/` — candidate generation → ranking → re-rank:
+
+```
+4 Recallers ──► WeightedLinearRanker ──► MMRReranker ──► top-K
+  CollaborativeRecaller   (gold.item_similarity — CF precomputed)
+  ContentRecaller         (brand/model/price band/fuel match)
+  VectorRecaller          (Qdrant similarity on last-engaged vehicle)
+  PopularityRecaller      (gold.mv_popular_vehicles — cold-start)
+```
+
+Trọng số / λ time-decay / top-k đều config-driven (`reco_config.yaml`). Guest → Popularity +
+Content; authed user → cả 4 recaller blend.
+
+---
+
+## Chatbot (RAG hybrid)
+
+`backend/app/services/chatbot/` — retrieval lai, bỏ ngưỡng điểm tuỳ tiện:
+
+```
+user message
+  1. query_parser  → trích hard constraints (budget, brand, body, year, fuel)
+  2. SQL filter    → gold.vehicles WHERE …
+  3. vector search → Qdrant với payload filter (tôn trọng constraints)
+  4. RRF fusion    → hợp nhất 2 ranked list (Reciprocal Rank Fusion)
+  5. generation    → gpt-4o-mini grounding trên DB rows, cite VIN
+```
+
+Hội thoại lưu `gold.chat_sessions` / `gold.chat_messages`; turn cũ được summarize thay vì
+cắt cứng.
+
+---
+
+## Khởi động (người mới)
+
+### 0. Prerequisites
 ```bash
-# Truy cập qua psql
-docker-compose exec postgres psql -U admin -d car_recsys
+docker --version && docker compose version    # bắt buộc
+node --version                                  # frontend (Node 18+)
+# chỉ nếu CHẠY CRAWLER trên máy này (worker host cần Chrome):
+sudo apt install -y xvfb python3-tk
+google-chrome --version
+gcloud auth application-default login           # để load_bronze/upload đọc-ghi GCS
+```
 
-# Hoặc qua host
-psql -h localhost -U admin -d car_recsys
-# Password: admin123
+### 1. Cấu hình secrets
+```bash
+cp car-recsys-system/.env.example car-recsys-system/.env
+# sửa trong .env:  OPENAI_API_KEY=sk-...   SECRET_KEY=<ngẫu nhiên>
+```
+
+### 2. Lên toàn bộ backend stack — 1 lệnh
+```bash
+cd car-recsys-system
+docker compose up -d
+```
+Lên: postgres · qdrant · redis · postgrest · temporal · temporal-ui · backend ·
+**pipeline-worker**. (frontend + bytebase bị loại khỏi mặc định.)
+
+### 3. Frontend (host)
+```bash
+cd car-recsys-system/frontend && npm install && npm run dev   # :3000
+```
+
+### 4. Đổ data
+**A — đã có data trên GCS:**
+```bash
+cd crawler
+.venv/bin/python -m temporal_app.scripts.trigger_once transform
+.venv/bin/python -m temporal_app.scripts.trigger_once ml
+```
+**B — crawl mới (cần Chrome host):**
+```bash
+cd crawler && ./run_worker.sh        # giữ chạy (terminal riêng)
+.venv/bin/python -m temporal_app.scripts.trigger_once pipeline
+```
+
+### 5. Bật lịch weekly (1 lần)
+```bash
+cd crawler
+.venv/bin/python -m temporal_app.scripts.create_schedule
+# cron Mon 02:00 → Temporal tự chạy crawl→transform→ml mãi mãi
 ```
 
 ---
 
-## 📊 Database Schema
+## Lưu ý quan trọng
 
-### Raw Layer (7 bảng)
-
-1. **used_vehicles** - Xe đã qua sử dụng (38 cột)
-2. **new_vehicles** - Xe mới (38 cột)
-3. **sellers** - Thông tin đại lý (22 cột)
-4. **reviews_ratings** - Đánh giá khách hàng (17 cột)
-5. **vehicle_features** - Tính năng chi tiết (6 cột)
-6. **vehicle_images** - Hình ảnh xe (7 cột)
-7. **seller_vehicle_relationships** - Liên kết seller-vehicle (9 cột)
-
-### Gold Layer (4 bảng)
-
-1. **users** - Người dùng hệ thống
-2. **user_interactions** - Lịch sử tương tác
-3. **user_favorites** - Xe yêu thích
-4. **user_searches** - Lịch sử tìm kiếm
-5. **chat_conversations** - Cuộc hội thoại chatbot
-6. **chat_messages** - Tin nhắn chat
+1. **Crawler chạy HOST, không Docker** — cars.com Cloudflare Turnstile cần Chrome+Xvfb thật
+   (đã verify Docker không bypass được). Mọi thứ khác chạy Docker.
+2. **Sửa dbt model → rebuild image** — pipeline-worker bake sẵn dbt project:
+   `docker build -f crawler/Dockerfile.pipeline -t car-pipeline-worker:latest .` rồi
+   `docker compose up -d --force-recreate pipeline-worker`.
+3. **OPENAI_API_KEY thiếu** → chatbot + bước `embed_vehicles` skip (không lỗi, không vector).
+4. **Schedule cron crawl** chỉ chạy khi crawler worker host online lúc đó; transform/ml
+   (Docker) thì luôn tự động.
 
 ---
 
-## 🤖 AI Chatbot Setup
-
-Hệ thống tích hợp chatbot AI sử dụng GPT-4o-mini và Qdrant vector search.
-
-### Bước 1: Cấu hình OpenAI API Key
+## Lệnh vận hành
 
 ```bash
-# Copy file env mẫu
-cp .env.example .env
+docker compose ps                              # trạng thái services
+docker compose logs -f pipeline-worker         # log transform/ml
+docker compose logs -f temporal                # log Temporal server
+docker compose exec postgres psql -U admin -d car_recsys   # psql
 
-# Edit file .env và thêm OPENAI_API_KEY
-OPENAI_API_KEY=your-openai-api-key-here
+# dbt thủ công (qua image, mount dbt dir):
+docker run --rm -v "$PWD/dbt:/app/dbt" \
+  -e DBT_PG_HOST=x -e DBT_PG_USER=admin -e DBT_PG_PASSWORD=admin123 -e DBT_PG_DBNAME=car_recsys \
+  car-pipeline-worker:latest dbt parse --profiles-dir /app/dbt --project-dir /app/dbt
+
+# xem schedule:
+docker compose exec temporal tctl --address temporal:7233 --namespace default schedule list
+
+# bật DB browser (Bytebase):
+docker compose --profile tools up -d bytebase   # http://localhost:8080
 ```
-
-### Bước 2: Khởi động Qdrant Vector Database
-
-```bash
-# Qdrant đã được include trong docker-compose
-docker-compose up -d qdrant
-```
-
-### Bước 3: Ingest dữ liệu xe vào Qdrant
-
-```bash
-# Chạy script ingest (cần OPENAI_API_KEY)
-cd backend
-python scripts/ingest_chatbot_data.py
-
-# Hoặc chỉ ingest một số lượng giới hạn để test
-python scripts/ingest_chatbot_data.py --limit 100
-```
-
-**Lưu ý:** Script sẽ tạo embeddings cho mỗi xe sử dụng `text-embedding-3-large` (3072 dimensions).
-Chi phí ước tính: ~$0.02/1000 vehicles
-
-### Bước 4: Khởi động Backend với Chatbot
-
-```bash
-# Khởi động backend
-docker-compose up -d backend
-
-# Hoặc chạy local
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-### Chatbot API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/v1/chat/message` | POST | Gửi tin nhắn và nhận phản hồi |
-| `/api/v1/chat/conversations` | GET | Lấy danh sách cuộc hội thoại |
-| `/api/v1/chat/conversation/{id}` | GET | Lấy tin nhắn của 1 cuộc hội thoại |
-| `/api/v1/chat/conversation/{id}` | DELETE | Xóa cuộc hội thoại |
-| `/api/v1/chat/health` | GET | Kiểm tra trạng thái chatbot |
-
-### Frontend Chat Features
-
-- **Chat Popup:** Floating chat bubble ở góc phải màn hình
-- **Full Chat Page:** Trang chat đầy đủ tại `/chat`
-- **Conversation History:** Lưu trữ và hiển thị lịch sử chat (cần đăng nhập)
-- **Vehicle Cards:** Hiển thị xe được gợi ý inline trong chat
-
----
-
-## 🛠️ Lệnh hữu ích
-
-### Kiểm tra trạng thái containers
-```bash
-docker-compose ps
-```
-
-### Xem logs
-```bash
-# Postgres logs
-docker-compose logs postgres
-
-# PostgREST logs
-docker-compose logs postgrest
-
-# Bytebase logs
-docker-compose logs bytebase
-```
-
-### Stop hệ thống
-```bash
-docker-compose down
-```
-
-### Reset database (xóa toàn bộ và load lại)
-```bash
-./reset_database.sh
-```
-
-### Backup database
-```bash
-docker-compose exec postgres pg_dump -U admin car_recsys > backup.sql
-```
-
-### Restore database
-```bash
-docker-compose exec -T postgres psql -U admin -d car_recsys < backup.sql
-```
-
----
-
-## 🐛 Troubleshooting
-
-### Lỗi: "Port 5432 already in use"
-```bash
-# Kiểm tra process đang dùng port 5432
-sudo lsof -i :5432
-
-# Hoặc dùng port khác trong docker-compose.yml
-ports:
-  - "5433:5432"  # Thay 5432 -> 5433
-```
-
-### Lỗi: "Connection refused"
-```bash
-# Đợi Postgres khởi động hoàn toàn
-docker-compose logs postgres | grep "ready to accept connections"
-
-# Nếu không thấy, restart container
-docker-compose restart postgres
-```
-
-### Lỗi: Load data thất bại
-```bash
-# Xóa và load lại
-./reset_database.sh
-```
-
-### Kiểm tra dung lượng disk
-```bash
-# Kiểm tra volumes
-docker system df -v
-
-# Dọn dẹp (cẩn thận!)
-docker system prune -a --volumes
-```
-
----
-
-## 📁 Cấu trúc thư mục
-
-```
-car-recsys-system/
-├── database/
-│   └── init/
-│       ├── 01-init-bytebase.sql      # Tạo user cho Bytebase
-│       ├── 02-create-schema.sql      # Schema chính
-│       └── 04-create-all-tables.sql  # Tất cả tables
-├── datasets/                          # 7 file CSV (~500MB)
-│   ├── used_vehicles.csv
-│   ├── new_vehicles.csv
-│   ├── sellers.csv
-│   ├── reviews_ratings.csv
-│   ├── vehicle_features.csv
-│   ├── vehicle_images.csv
-│   └── seller_vehicle_relationships.csv
-├── docker-compose.yml                 # Container orchestration
-├── setup.sh                           # Setup script tự động
-├── reset_database.sh                  # Reset database
-├── load_complete_database.py          # Load data script
-├── check_db_status.py                 # Kiểm tra DB
-└── README.md                          # File này
-```
-
----
-
-## 🎯 Next Steps
-
-Sau khi cài đặt xong, bạn có thể:
-
-1. **Khám phá API:** Mở http://localhost:3001 để xem OpenAPI docs
-2. **Quản lý DB:** Truy cập Bytebase tại http://localhost:8080
-3. **Query data:** Dùng PostgREST để query thay vì viết SQL
-4. **Build frontend:** Kết nối frontend với API tại port 3001
-
----
-
-## 📞 Support
-
-Nếu gặp vấn đề, tạo issue tại: https://github.com/VietDucFCB/car-recsys-consultant-chatbot/issues
-
----
-
-## 📜 License
-
-MIT License - Free to use for personal and commercial projects.
-
----
-
-**Chúc bạn thành công! 🎉**
