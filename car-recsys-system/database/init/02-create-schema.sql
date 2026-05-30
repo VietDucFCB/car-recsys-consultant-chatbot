@@ -216,6 +216,35 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA gold   TO admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA silver GRANT ALL ON TABLES TO admin;
 ALTER DEFAULT PRIVILEGES IN SCHEMA gold   GRANT ALL ON TABLES TO admin;
 
+-- On Cloud SQL this script runs as `postgres`, so every object it creates is
+-- owned by postgres — and GRANT ALL is NOT enough for ops that require table
+-- OWNERSHIP (e.g. CREATE TABLE ... PARTITION OF gold.vehicle_price_history from
+-- the ensure_partition activity, run as `admin`). Re-own everything to admin so
+-- the app/worker user can manage its own tables. No-op on local (admin already
+-- owns them). Skips if the `admin` role doesn't exist.
+DO $reown$
+DECLARE r record;
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'admin') THEN
+    FOR r IN
+      SELECT schemaname, tablename FROM pg_tables
+      WHERE schemaname IN ('bronze','silver','gold')
+    LOOP
+      EXECUTE format('ALTER TABLE %I.%I OWNER TO admin', r.schemaname, r.tablename);
+    END LOOP;
+    FOR r IN
+      SELECT n.nspname, p.proname,
+             pg_get_function_identity_arguments(p.oid) AS args
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+      WHERE n.nspname IN ('bronze','silver','gold')
+    LOOP
+      EXECUTE format('ALTER FUNCTION %I.%I(%s) OWNER TO admin',
+                     r.nspname, r.proname, r.args);
+    END LOOP;
+  END IF;
+END
+$reown$;
+
 -- ============================================================================
 -- Comments
 -- ============================================================================
