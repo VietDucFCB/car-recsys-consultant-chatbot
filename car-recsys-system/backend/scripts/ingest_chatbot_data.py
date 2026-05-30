@@ -50,7 +50,7 @@ def main() -> int:
 
     embeddings = OpenAIEmbeddings(model=settings.OPENAI_EMBEDDING_MODEL,
                                   openai_api_key=settings.OPENAI_API_KEY)
-    qdrant = QdrantClient(url=settings.QDRANT_URL)
+    qdrant = QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY or None)
     db_engine = create_engine(settings.DATABASE_URL)
 
     ingestor = VehicleEmbeddingIngestor(db_engine, embeddings, qdrant)
