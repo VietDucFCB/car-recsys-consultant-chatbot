@@ -137,14 +137,21 @@ class RecommendationEngine:
         return min(1.0, n_interactions / thr)
 
     def _seed_brand(self, seed_ids: list[str]) -> Optional[str]:
-        """Brand of the first seed vehicle, for brand-aware popularity fallback."""
+        """Brand of the first seed vehicle, for brand-aware popularity fallback.
+
+        Fail-soft like _vehicle_price/_user_budget: a transient DB error returns
+        None (drop brand-scoping) rather than aborting the whole recommendation.
+        """
         if not seed_ids:
             return None
-        row = self.db.execute(
-            text("SELECT brand FROM gold.vehicles WHERE vehicle_id = :id LIMIT 1"),
-            {"id": seed_ids[0]},
-        ).fetchone()
-        return row[0] if row and row[0] else None
+        try:
+            row = self.db.execute(
+                text("SELECT brand FROM gold.vehicles WHERE vehicle_id = :id LIMIT 1"),
+                {"id": seed_ids[0]},
+            ).fetchone()
+            return row[0] if row and row[0] else None
+        except Exception:  # noqa: BLE001
+            return None
 
     # ---- pipeline ---------------------------------------------------------
 
