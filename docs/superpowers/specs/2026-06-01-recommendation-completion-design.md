@@ -32,6 +32,9 @@ signal to learn). Adding ALS now is building on sand.
 | item_similarity empty | Confirmed correct behavior (sparse data). Verify it auto-fills when data arrives; ensure CollaborativeRecaller fail-soft on empty. |
 | Demo CF | Include a **seed script** (synthetic multi-user interactions) so `compute_item_similarity` produces data and the full hybrid (incl. item-CF) can be demoed — kept separate from real data. |
 | Offline eval | Include an **eval script** (Coverage, Diversity, Precision@K/NDCG with documented limits given sparse ground truth) for the thesis report. |
+| **Dynamic CF weighting** | Ranker scales the collaborative weight by the seed user's interaction count (0 interactions → CF α=0; grows with history) instead of a purely static YAML weight. No redeploy when moving cold-start → has-data. |
+| **Vector ≠ Content (de-overlap)** | `embed_vehicles._build_document` currently embeds only STRUCTURED fields (brand/model/price/specs) — nearly identical to ContentRecaller's SQL. Enrich the document with **unstructured consumer-review text** (`gold.reviews.review_text`/`review_title`, 9938 rows, joined by `car_model`) so Vector captures soft semantics (owner sentiment/experience) that SQL can't, while Content owns hard specs. |
+| **Granular popularity** | PopularityRecaller falls back to **popularity-by-brand** when a brand context is known, before global popularity (avoids recommending a popular sedan to a truck shopper). By-segment deferred (no clean segment column in gold). |
 
 ## Architecture / Components
 
@@ -46,13 +49,32 @@ exists and make it provably run on AlloyDB + the new Qdrant.
      real `gold.vehicles` columns (post raw→gold drift fix). Example to confirm: a sedan seed
      returns same-segment sedans in a nearby price band.
    - `PopularityRecaller` — reads `mv_popular_vehicles` (5337); cold-start fallback works.
-2. **Ranker weights tuned for the no-CF regime** (`reco_config.yaml`): when CF contributes
-   nothing, content + vector + popularity must still produce a good ranking; raise their
-   weights, and document that CF weight only matters once `item_similarity` is populated.
-3. **Fail-soft everywhere** — a recaller that returns empty (CF today) is skipped without
+2. **Dynamic CF weighting in the ranker** (`ranker.py` + `reco_config.yaml`): instead of a
+   purely static collaborative weight, scale it by the seed user's interaction count —
+   `effective_cf_weight = base_cf_weight * min(1, n_user_interactions / cf_warmup_threshold)`
+   (`cf_warmup_threshold` configurable, e.g. 20). At 0 interactions CF contributes 0; it ramps
+   up as history accrues. Content/vector/popularity keep their base weights. This means no
+   config edit or redeploy when the system transitions cold-start → has-data. The base weights
+   still live in YAML; only the CF scaling is computed at request time from the seed count.
+3. **Vector document de-overlap (embed enrichment)** — `crawler/temporal_app/pipeline/
+   embeddings.py::_build_document` today concatenates only structured fields, so VectorRecaller
+   largely duplicates ContentRecaller. Enrich the embedded document with **consumer-review
+   text**: join `gold.reviews` (`review_text`, `review_title`) on `car_model`, take up to N
+   recent/representative reviews per vehicle's model, and append a trimmed "What owners say:
+   ..." section. Keep length bounded (e.g. cap appended review chars ~600 to control token
+   cost — backfill re-embed of 5337 stays cheap). After this change, re-run the embed backfill
+   so vectors carry the soft signal. Content stays specs-only (hard signal); Vector adds
+   semantics. Document this split.
+4. **Fail-soft everywhere** — a recaller that returns empty (CF today) is skipped without
    breaking the pipeline. Verify `recommend_for_user` cold-start path → popular, and that an
    empty `item_similarity` query does not raise.
-4. **MMR diversity** confirmed (no 10 near-identical results) — cap per brand/segment.
+5. **Granular popularity** — `PopularityRecaller` accepts an optional brand context; when
+   present (e.g. the seed vehicle's brand, or a brand filter), it returns top-popular **within
+   that brand** first, then backfills with global popularity. Avoids recommending a popular
+   sedan to a truck shopper. Implement via a brand-filtered query over `mv_popular_vehicles`
+   (or `gold.vehicles` ordered by the popularity signal) — by-segment is deferred (gold lacks a
+   clean segment column; brand is available now).
+6. **MMR diversity** confirmed (no 10 near-identical results) — cap per brand/segment.
 
 ### Part B — item-CF auto-activates with data
 5. Confirm `compute_item_similarity` writes `gold.item_similarity` when interactions are
@@ -69,9 +91,12 @@ exists and make it provably run on AlloyDB + the new Qdrant.
 8. **`scripts/eval_reco.py`** (new): offline metrics on the engine's output —
    **Coverage** (% of catalog recommendable), **Diversity** (intra-list brand/segment
    spread), and **Precision@K / NDCG@K** using a held-out slice of (seeded or real)
-   interactions as ground truth. The script PRINTS the numbers and a one-line caveat that
-   P@K/NDCG are only meaningful once real interaction volume exists; Coverage/Diversity are
-   valid now. Output is report-ready.
+   interactions as ground truth. The script PRINTS the numbers AND a prominent caveat (also to
+   be repeated in the thesis report): **P@K/NDCG measured on synthetic seeded interactions
+   reflect how well the engine recovers the SEED SCRIPT's co-view logic — not real-world
+   recommendation quality.** Only **Coverage and Diversity are trustworthy at this stage**
+   (they don't depend on ground-truth labels). Real P@K/NDCG require real user interaction
+   volume. Output is report-ready with this disclaimer baked in.
 
 ## Data flow (unchanged, verified)
 ```
@@ -98,5 +123,14 @@ gold.vehicles ──(ML: embed_vehicles)──► Qdrant (5337) ─────�
 4. With empty `item_similarity`, no endpoint errors (fail-soft proven).
 5. After `seed_demo_interactions.py` + ML `compute_item_similarity`, `gold.item_similarity`
    is non-empty and `/reco/similar` for a seeded vehicle reflects collaborative neighbors.
-6. `eval_reco.py` prints Coverage / Diversity / P@K / NDCG with the documented caveat.
+6. `eval_reco.py` prints Coverage / Diversity / P@K / NDCG with the documented caveat
+   (synthetic-data disclaimer present in output).
 7. MMR caps verified — results are diverse across brand/segment.
+8. **Dynamic CF weight:** with the real 1-user/14-interaction account, CF contributes ~0; a
+   seeded user past `cf_warmup_threshold` gets non-zero CF influence — confirmed without a
+   config edit/redeploy.
+9. **Vector de-overlap:** an embedded vehicle's stored document contains a "What owners say"
+   section from `gold.reviews`; after re-embed, `/reco/similar/{vin}` differs from pure
+   content SQL (vector surfaces semantically-related vehicles, not just same-spec ones).
+10. **Granular popularity:** popularity fallback with a brand context returns that brand's
+    popular vehicles first (truck shopper doesn't get a popular sedan).
