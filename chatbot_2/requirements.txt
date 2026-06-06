@@ -16,5 +16,8 @@ fastapi==0.136.3
 anyio
 pydantic
 SQLAlchemy==2.0.50
-psycopg2-binary==2.9.9
+
+# >=2.9.10 ships wheels for Python 3.13 (2.9.9 fails: undefined symbol
+# _PyInterpreterState_Get on 3.13).
+psycopg2-binary>=2.9.10
 python-dotenv
