@@ -26,7 +26,7 @@ EMBED_DIM = int(os.getenv("OPENAI_EMBEDDING_DIM", "3072"))
 
 CHUNK_SIZE = 250
 CHUNK_OVERLAP = 30
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 
 
 def _load_rows():
@@ -127,8 +127,9 @@ def main():
                     raise
                 print(f"  batch {i} failed ({exc}); retry {attempt + 1}/2 ...")
                 time.sleep(3 * (attempt + 1))
-        print(f"added {min(i + BATCH_SIZE, total)}/{total}")
-    print("ingest complete")
+        done = min(i + BATCH_SIZE, total)
+        print(f"added {done}/{total} ({100 * done // total}%)", flush=True)
+    print("ingest complete", flush=True)
 
 
 if __name__ == "__main__":
