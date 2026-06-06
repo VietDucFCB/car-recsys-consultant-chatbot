@@ -745,67 +745,47 @@ Reply in the same language the customer is using.
             params["brand_top_features"] = {"brand": brand}
         else:
             queries["brand_counts"] = text("""
-                SELECT TOP 10 b.brand, COUNT(p.VIN) as total
-                FROM post.Post p
-                JOIN core.Car c ON p.car_model = c.car_model
-                JOIN core.Brand b ON c.brand_id = b.brand_id
-                WHERE b.brand IS NOT NULL
-                GROUP BY b.brand
-                ORDER BY total DESC
+                SELECT brand, COUNT(vin) AS total
+                FROM gold.vehicles WHERE brand IS NOT NULL
+                GROUP BY brand ORDER BY total DESC LIMIT 10
             """)
             params["brand_counts"] = {}
 
             queries["fuel_type_counts"] = text("""
-                SELECT ft.fuel_type, COUNT(VIN) as total
-                FROM post.Post p
-                JOIN lookup.fuel_type ft ON p.fuel_type = ft.fuel_type_id
-                GROUP BY ft.fuel_type
-                ORDER BY total DESC
+                SELECT fuel_type, COUNT(vin) AS total
+                FROM gold.vehicles WHERE fuel_type IS NOT NULL
+                GROUP BY fuel_type ORDER BY total DESC
             """)
             params["fuel_type_counts"] = {}
 
             queries["price_stats"] = text("""
-                SELECT
-                    COUNT(DISTINCT VIN) as total_cars,
-                    MIN(price) as min_price,
-                    MAX(price) as max_price,
-                    AVG(price) as avg_price
-                FROM post.Post
-                WHERE price IS NOT NULL AND price > 0
+                SELECT COUNT(DISTINCT vin) AS total_cars, MIN(price) AS min_price,
+                       MAX(price) AS max_price, AVG(price) AS avg_price
+                FROM gold.vehicles WHERE price IS NOT NULL AND price > 0
             """)
             params["price_stats"] = {}
 
             queries["top_models"] = text("""
-                SELECT TOP 10 c.car_name, AVG(p.price) as price_avg,
-                    c.car_rating, c.percentage_recommend
-                FROM post.Post p
-                JOIN core.Car c ON p.car_model = c.car_model
-                GROUP BY c.car_name, c.car_rating, c.percentage_recommend
-                ORDER BY c.car_rating DESC, c.percentage_recommend DESC, price_avg ASC
+                SELECT car_name, AVG(price) AS price_avg,
+                       MAX(car_rating) AS car_rating, MAX(percentage_recommend) AS percentage_recommend
+                FROM gold.vehicles
+                GROUP BY car_name ORDER BY car_rating DESC, percentage_recommend DESC, price_avg ASC LIMIT 10
             """)
             params["top_models"] = {}
 
             queries["model_counts"] = text("""
-                SELECT TOP 15 c.car_name, b.brand, COUNT(p.VIN) as total_listings,
-                    AVG(p.price) as avg_price, c.car_rating
-                FROM post.Post p
-                JOIN core.Car c ON p.car_model = c.car_model
-                JOIN core.Brand b ON c.brand_id = b.brand_id
-                WHERE c.car_name IS NOT NULL
-                GROUP BY c.car_name, b.brand, c.car_rating
-                ORDER BY total_listings DESC
+                SELECT car_name, brand, COUNT(vin) AS total_listings,
+                       AVG(price) AS avg_price, MAX(car_rating) AS car_rating
+                FROM gold.vehicles WHERE car_name IS NOT NULL
+                GROUP BY car_name, brand ORDER BY total_listings DESC LIMIT 15
             """)
             params["model_counts"] = {}
 
             if feature_view:
-                queries["top_features"] = text(f"""
-                    SELECT TOP 10 ff.feature_name, COUNT(pp.VIN) as total
-                    FROM post.Post pp
-                    JOIN post.Post_Feature ppf ON pp.VIN = ppf.VIN
-                    JOIN feature.Feature ff ON ppf.feature_id = ff.feature_id
-                    JOIN feature.Feature_type fft ON ff.feature_type_id = fft.feature_type_id
-                    GROUP BY ff.feature_name
-                    ORDER BY total DESC
+                queries["top_features"] = text("""
+                    SELECT feature_name, COUNT(DISTINCT vehicle_id) AS total
+                    FROM gold.vehicle_features WHERE feature_name IS NOT NULL
+                    GROUP BY feature_name ORDER BY total DESC LIMIT 10
                 """)
                 params["top_features"] = {}
 
