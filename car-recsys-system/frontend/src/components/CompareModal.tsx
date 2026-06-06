@@ -51,7 +51,7 @@ export default function CompareModal({ isOpen, onClose, onSelect, currentVehicle
       try {
         const response = await vehiclesApi.search({ query: searchQuery, limit: 10 });
         // Filter out current vehicle
-        const filtered = response.items.filter(v => v.vehicle_id !== currentVehicleId);
+        const filtered = response.results.filter(v => v.vehicle_id !== currentVehicleId);
         setSearchResults(filtered as any);
       } catch (error) {
         console.error('Search error:', error);

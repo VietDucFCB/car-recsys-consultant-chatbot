@@ -23,7 +23,8 @@ def _point_id(vehicle_id: str) -> str:
     return str(uuid.uuid5(_NAMESPACE, vehicle_id))
 
 
-def _build_document(v: dict[str, Any], features: list[str]) -> str:
+def _build_document(v: dict[str, Any], features: list[str],
+                    reviews: Optional[list[str]] = None) -> str:
     parts = [
         f"{v.get('new_used') or ''} {v.get('title') or ''}".strip(),
         f"Brand: {v.get('brand')}." if v.get("brand") else "",
@@ -44,6 +45,11 @@ def _build_document(v: dict[str, Any], features: list[str]) -> str:
         parts.append("Features: " + ", ".join(features[:30]) + ".")
     if v.get("seller_name"):
         parts.append(f"Sold by {v['seller_name']} ({v.get('destination') or ''}).")
+    if reviews:
+        joined = " ".join(reviews)
+        if len(joined) > 600:
+            joined = joined[:600].rsplit(" ", 1)[0]
+        parts.append("What owners say: " + joined + ".")
     return " ".join(p for p in parts if p)
 
 
@@ -142,6 +148,36 @@ def embed_vehicles(
             for vid, fname in cur.fetchall():
                 if fname:
                     feats.setdefault(vid, []).append(fname)
+
+        # Consumer-review text per car_model → soft semantic signal for the
+        # vector (specs are already covered by ContentRecaller's SQL).
+        model_slugs = list({v.get("car_model") for v in vehicles if v.get("car_model")})
+        reviews_by_model: dict[str, list[str]] = {}
+        if model_slugs:
+            with conn.cursor() as rcur:
+                # Top-10 most-recent reviews per model (review_sk tiebreaker →
+                # deterministic re-embeds; bounds memory regardless of how many
+                # reviews a popular model has — the 600-char doc cap dominates).
+                rcur.execute(
+                    """
+                    SELECT car_model, review_title, review_text FROM (
+                        SELECT car_model, review_title, review_text,
+                               row_number() OVER (
+                                   PARTITION BY car_model
+                                   ORDER BY review_date DESC NULLS LAST, review_sk
+                               ) AS rn
+                        FROM gold.reviews
+                        WHERE car_model = ANY(%s)
+                          AND (review_text IS NOT NULL OR review_title IS NOT NULL)
+                    ) s
+                    WHERE rn <= 10
+                    """,
+                    (model_slugs,),
+                )
+                for cm, rtitle, rtext in rcur.fetchall():
+                    snippet = " ".join(p for p in (rtitle, rtext) if p).strip()
+                    if snippet:
+                        reviews_by_model.setdefault(cm, []).append(snippet)
     finally:
         conn.close()
 
@@ -149,7 +185,9 @@ def embed_vehicles(
     embedded = 0
     for start in range(0, len(vehicles), batch_size):
         batch = vehicles[start:start + batch_size]
-        docs = [_build_document(v, feats.get(v["vehicle_id"], [])) for v in batch]
+        docs = [_build_document(v, feats.get(v["vehicle_id"], []),
+                                reviews_by_model.get(v.get("car_model"), []))
+                for v in batch]
         resp = client.embeddings.create(model=embedding_model, input=docs)
         vectors = [d.embedding for d in resp.data]
         points = [
