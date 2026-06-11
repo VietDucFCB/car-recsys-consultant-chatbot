@@ -17,10 +17,13 @@ import FavoritesPage from "./pages/FavoritesPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
 import ChatPopup from "./components/ChatPopup";
+import ScrollToTop from "./components/ScrollToTop";
+import ScrollUpButton from "./components/ScrollUpButton";
 
 const queryClient = new QueryClient();
-
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "893613114700-5e57386c5b899286dc2cv2j3d571scah.apps.googleusercontent.com";
+const googleClientId =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  "893613114700-5e57386c5b899286dc2cv2j3d571scah.apps.googleusercontent.com";
 
 const App = () => (
   <GoogleOAuthProvider clientId={googleClientId}>
@@ -31,6 +34,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/search" element={<SearchPage />} />
@@ -46,6 +50,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <ChatPopup />
+              <ScrollUpButton />
             </BrowserRouter>
           </TooltipProvider>
         </QueryClientProvider>
