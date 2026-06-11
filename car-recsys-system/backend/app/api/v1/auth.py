@@ -145,68 +145,68 @@ async def get_current_user(
 
 @router.post("/social-login", response_model=Token)
 async def social_login(social_data: SocialLoginInput, db: Session = Depends(get_db)):
-    """Log in or sign up a user via a social provider (Google or Facebook)"""
+    """Log in or sign up a user via Google (verifies the OAuth access token)."""
     email = social_data.email
     full_name = social_data.full_name
 
-    # Verify Google token if provided
-    if social_data.provider == "google" and social_data.token:
-        try:
-            async with httpx.AsyncClient() as client:
-                # 1. Verify access token with Google's tokeninfo API
-                token_info_resp = await client.get(
-                    "https://oauth2.googleapis.com/tokeninfo",
-                    params={"access_token": social_data.token}
-                )
-                if token_info_resp.status_code != 200:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Invalid Google OAuth token"
-                    )
-                token_info = token_info_resp.json()
+    # A social login MUST carry a provider token we can verify server-side.
+    # Without it we cannot prove the caller owns the email — issuing a session
+    # from an unverified email would be a full account-takeover backdoor.
+    if social_data.provider != "google" or not social_data.token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A valid Google OAuth token is required for social login",
+        )
 
-                # Verify Client ID matches
-                client_id = token_info.get("azp") or token_info.get("aud")
-                expected_client_id = settings.GOOGLE_CLIENT_ID
-                # Allow fallback if no custom client ID is configured
-                default_client_id = "893613114700-5e57386c5b899286dc2cv2j3d571scah.apps.googleusercontent.com"
-                if client_id not in (expected_client_id, default_client_id):
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Google token client ID mismatch"
-                    )
-
-                # 2. Fetch user profile info
-                user_info_resp = await client.get(
-                    "https://www.googleapis.com/oauth2/v3/userinfo",
-                    headers={"Authorization": f"Bearer {social_data.token}"}
-                )
-                if user_info_resp.status_code != 200:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Failed to retrieve Google user profile"
-                    )
-                user_info = user_info_resp.json()
-                email = user_info.get("email")
-                full_name = user_info.get("name") or full_name
-
-                if not email:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="Email not provided by Google account"
-                    )
-        except httpx.HTTPError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Google authentication service error: {str(e)}"
+    # Verify the Google token, then derive identity from Google (never trust the
+    # client-supplied email/full_name — they are overwritten below).
+    try:
+        async with httpx.AsyncClient() as client:
+            # 1. Verify access token with Google's tokeninfo API
+            token_info_resp = await client.get(
+                "https://oauth2.googleapis.com/tokeninfo",
+                params={"access_token": social_data.token}
             )
-    else:
-        # If token is not provided, enforce that email is provided (fallback/simulated)
-        if not email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email is required for social login"
+            if token_info_resp.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid Google OAuth token"
+                )
+            token_info = token_info_resp.json()
+
+            # Verify the token was minted for OUR app (GOOGLE_CLIENT_ID is the
+            # single source of truth — set it via env in every environment).
+            client_id = token_info.get("azp") or token_info.get("aud")
+            if client_id != settings.GOOGLE_CLIENT_ID:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Google token client ID mismatch"
+                )
+
+            # 2. Fetch user profile info
+            user_info_resp = await client.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {social_data.token}"}
             )
+            if user_info_resp.status_code != 200:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Failed to retrieve Google user profile"
+                )
+            user_info = user_info_resp.json()
+            email = user_info.get("email")
+            full_name = user_info.get("name") or full_name
+
+            if not email:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email not provided by Google account"
+                )
+    except httpx.HTTPError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Google authentication service error: {str(e)}"
+        )
 
     # Find user by email
     user = db.query(User).filter(User.email == email).first()
