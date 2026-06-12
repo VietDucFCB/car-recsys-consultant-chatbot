@@ -53,7 +53,13 @@ class VehicleResponse(VehicleBase):
     image_url: Optional[str] = None
     images: Optional[List[str]] = []
     features: Optional[List[str]] = []
-    
+    features_grouped: Optional[dict] = None
+    # Full vehicle history (gold.vehicles booleans). accidents_damage/one_owner
+    # are on VehicleBase; these three were missing so Pydantic dropped them.
+    clean_title: Optional[bool] = None
+    has_open_recall: Optional[bool] = None
+    is_personal_use: Optional[bool] = None
+
     @field_validator('price', 'mileage', 'car_rating', mode='before')
     @classmethod
     def convert_decimal(cls, v):
