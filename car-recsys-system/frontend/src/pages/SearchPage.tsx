@@ -1,6 +1,6 @@
 // import { useState, useEffect } from "react";
 // import { useSearchParams } from "react-router-dom";
-// import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+// import { Search, SlidersHorizontal, Loader2, X } from "lucide-react";
 // import Header from "@/components/Header";
 // import Footer from "@/components/Footer";
 // import VehicleCard from "@/components/VehicleCard";
@@ -367,7 +367,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2, X } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VehicleCard from "@/components/VehicleCard";
@@ -412,11 +412,20 @@ const SearchPage = () => {
   const [page, setPage] = useState(parseInt(searchParams.get("page") || "1"));
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // "Popular Categories" on the home page link to /search?category=<Name>.
+  // Resolve that into the right backend filter: fuel categories map to
+  // fuel_type, the rest map to body_type (derived in gold.vehicles).
+  const FUEL_CATEGORIES = ["Electric", "Hybrid", "Diesel"];
+  const category = searchParams.get("category") || "";
+  const categoryFuel = FUEL_CATEGORIES.includes(category) ? category : undefined;
+  const categoryBody = category && !categoryFuel ? category : undefined;
+
   // Build API params
   const apiParams: SearchParams = {
     query: searchQuery || undefined,
     brand: selectedBrand && selectedBrand !== "all" ? selectedBrand : undefined,
-    fuel_type: selectedFuel && selectedFuel !== "all" ? selectedFuel : undefined,
+    fuel_type: (selectedFuel && selectedFuel !== "all" ? selectedFuel : undefined) ?? categoryFuel,
+    body_type: categoryBody,
     transmission: selectedTransmission && selectedTransmission !== "all" ? selectedTransmission : undefined,
     price_min: priceMin ? parseFloat(priceMin.replace(/\D/g, "")) : undefined,
     price_max: priceMax ? parseFloat(priceMax.replace(/\D/g, "")) : undefined,
@@ -432,6 +441,8 @@ const SearchPage = () => {
   // Update URL params when filters change
   useEffect(() => {
     const params = new URLSearchParams();
+    // Preserve the category from the home-page link so the body_type/fuel filter sticks.
+    if (category) params.set("category", category);
     if (searchQuery) params.set("q", searchQuery);
     if (selectedBrand && selectedBrand !== "all") params.set("brand", selectedBrand);
     if (selectedFuel && selectedFuel !== "all") params.set("fuel", selectedFuel);
@@ -442,9 +453,15 @@ const SearchPage = () => {
     if (sortBy !== "created_at") params.set("sort", sortBy);
     if (sortOrder !== "desc") params.set("order", sortOrder);
     if (page > 1) params.set("page", page.toString());
-    
+
     setSearchParams(params, { replace: true });
-  }, [searchQuery, selectedBrand, selectedFuel, selectedTransmission, priceMin, priceMax, mileageMax, sortBy, sortOrder, page]);
+  }, [category, searchQuery, selectedBrand, selectedFuel, selectedTransmission, priceMin, priceMax, mileageMax, sortBy, sortOrder, page]);
+
+  const clearCategory = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete("category");
+    setSearchParams(params, { replace: true });
+  };
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -457,9 +474,10 @@ const SearchPage = () => {
     setSortBy("created_at");
     setSortOrder("desc");
     setPage(1);
+    clearCategory();
   };
 
-  const hasActiveFilters = searchQuery || selectedBrand || selectedFuel || selectedTransmission || priceMin || priceMax || mileageMax;
+  const hasActiveFilters = searchQuery || selectedBrand || selectedFuel || selectedTransmission || priceMin || priceMax || mileageMax || category;
 
   const FilterContent = () => (
     <div className="space-y-6">
@@ -649,7 +667,7 @@ const SearchPage = () => {
             {/* Results */}
             <div className="flex-1">
               {/* Results count */}
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
                 <p className="text-muted-foreground">
                   {isLoading ? (
                     "Searching..."
@@ -659,6 +677,16 @@ const SearchPage = () => {
                     </>
                   )}
                 </p>
+                {category && (
+                  <button
+                    type="button"
+                    onClick={clearCategory}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 text-accent border border-accent/30 px-3 py-1 text-sm font-medium hover:bg-accent/25 transition-colors"
+                  >
+                    {category}
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
 
               {/* Loading State */}

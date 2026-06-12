@@ -1,13 +1,15 @@
 import { Link } from "react-router-dom";
-import { Car, Zap, Leaf, Droplet, Crown, Wind, Truck, Sparkles } from "lucide-react";
+import { Car, Zap, Leaf, Droplet, Wind, Truck } from "lucide-react";
 
+// Only categories we can actually filter on: fuel (Electric/Hybrid/Diesel ->
+// gold.vehicles.fuel_type) and body type (the rest -> gold.vehicles.body_type,
+// derived from the model via a dbt seed). Luxury/Crossover dropped — no clean
+// signal in the data.
 const categories = [
   { name: "Electric", icon: Zap },
   { name: "SUV", icon: Truck },
   { name: "Sedan", icon: Car },
   { name: "Pickup Truck", icon: Truck },
-  { name: "Luxury", icon: Crown },
-  { name: "Crossover", icon: Car },
   { name: "Hybrid", icon: Leaf },
   { name: "Diesel", icon: Droplet },
   { name: "Coupe", icon: Car },

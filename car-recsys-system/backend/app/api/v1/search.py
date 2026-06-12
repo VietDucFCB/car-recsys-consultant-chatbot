@@ -25,6 +25,7 @@ async def search_vehicles(
     price_max: Optional[float] = Query(None),
     mileage_max: Optional[float] = Query(None),
     fuel_type: Optional[str] = Query(None),
+    body_type: Optional[str] = Query(None, description="Body type: SUV, Sedan, Pickup Truck, Coupe, Hatchback, Wagon, Convertible"),
     transmission: Optional[str] = Query(None),
     drivetrain: Optional[str] = Query(None),
     exterior_color: Optional[str] = Query(None),
@@ -73,7 +74,12 @@ async def search_vehicles(
     if fuel_type:
         conditions.append("fuel_type ILIKE :fuel_type")
         params['fuel_type'] = f"%{fuel_type}%"
-    
+
+    if body_type:
+        # Exact match (case-insensitive): avoids "Truck" matching "Pickup Truck".
+        conditions.append("body_type ILIKE :body_type")
+        params['body_type'] = body_type
+
     if transmission:
         conditions.append("transmission ILIKE :transmission")
         params['transmission'] = f"%{transmission}%"

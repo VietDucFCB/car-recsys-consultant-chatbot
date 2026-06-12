@@ -24,6 +24,14 @@ feat_agg as (
     select listing_sk, count(*) as feature_count
     from {{ ref('bridge_listing_feature') }}
     group by listing_sk
+),
+
+-- body_type derived from the model name via a seed (cars.com has no body-type
+-- field). Strip the trailing -YYYY year from the slug to match the seed key;
+-- unmapped models get NULL (just absent from body-type category filters).
+body_type_map as (
+    select brand_model_base, body_type
+    from {{ ref('car_model_body_type') }}
 )
 
 select
@@ -42,6 +50,7 @@ select
     fl.exterior_color,
     fl.interior_color,
     fl.fuel_type,
+    bt.body_type,
     fl.engine,
     fl.mpg,
     fl.drivetrain,
@@ -96,6 +105,8 @@ left join {{ ref('fct_model_rating') }} mr on fl.car_model_sk = mr.car_model_sk
 left join {{ ref('dim_seller') }}      ds  on fl.seller_sk    = ds.seller_sk
 left join img_agg  img  on fl.listing_sk = img.listing_sk
 left join feat_agg feat on fl.listing_sk = feat.listing_sk
+left join body_type_map bt
+    on regexp_replace(fl.car_model_slug, '-(19|20)[0-9][0-9]$', '') = bt.brand_model_base
 {% if is_incremental() %}
 where fl.last_updated_date >= (select coalesce(max(last_updated_date), '1900-01-01') from {{ this }})
 {% endif %}

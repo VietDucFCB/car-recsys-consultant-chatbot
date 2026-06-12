@@ -81,6 +81,7 @@ export interface SearchParams {
   price_max?: number;
   mileage_max?: number;
   fuel_type?: string;
+  body_type?: string;
   transmission?: string;
   drivetrain?: string;
   exterior_color?: string;
