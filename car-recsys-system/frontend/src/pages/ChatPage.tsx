@@ -38,9 +38,14 @@ export default function ChatPage() {
   const loggedIn = isAuthenticated();
   const { data: sessions, refetch: refetchSessions } = useChatSessions(loggedIn);
   const deleteSession = useDeleteChatSession();
-  const { data: sessionMessages } = useChatSessionMessages(loggedIn ? sessionId : null);
+  // Only load past messages when the user explicitly OPENS a session from the
+  // sidebar (openSessionId). A live conversation reuses `sessionId` for context
+  // but must NOT re-fetch/overwrite the messages it's already showing — that race
+  // was resetting state and spawning a new session on every turn.
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null);
+  const { data: sessionMessages } = useChatSessionMessages(openSessionId);
 
-  // When a past session's messages load, render them.
+  // When a past session's messages load (after openSession), render them.
   useEffect(() => {
     if (sessionMessages && sessionMessages.length > 0) {
       setMessages(sessionMessages.map((m, i) => ({
@@ -72,7 +77,8 @@ export default function ChatPage() {
   }, [messages.length, sessionId]);
 
   const openSession = (id: string) => {
-    setSessionId(id);   // triggers useChatSessionMessages(id) → effect loads messages
+    setSessionId(id);       // reuse this id for the next turn (continue the conversation)
+    setOpenSessionId(id);   // triggers useChatSessionMessages(id) → effect loads its messages
   };
 
   const startNewConversation = () => {
@@ -84,6 +90,7 @@ export default function ChatPage() {
       chatApi.reset(sessionId).catch(() => { /* ignore — local reset is enough */ });
     }
     setSessionId(null);
+    setOpenSessionId(null);
     setMessages([]);
   };
 
@@ -147,10 +154,11 @@ export default function ChatPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       <Header />
-      
-      <div className="flex-1 flex overflow-hidden">
+
+      {/* pt-20 clears the fixed h-20 header so the sidebar + chat aren't hidden under it */}
+      <div className="flex-1 flex overflow-hidden pt-20">
         {/* History Sidebar (logged-in only) */}
         {loggedIn && (
           <aside className="hidden lg:flex lg:flex-col w-64 border-r border-border bg-card/40 p-3 gap-2">
