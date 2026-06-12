@@ -8,6 +8,7 @@ import {
   interactionsApi,
   authApi,
   reviewsApi,
+  chatApi,
   UserReview,
   UserReviewInput,
   SearchParams,
@@ -23,6 +24,8 @@ import {
   Seller,
   ReviewsListParams,
   ReviewsListResponse,
+  ChatSessionSummary,
+  ChatMessageOut,
   storeAuthData,
   trackVehicleView,
 } from '@/lib/api';
@@ -365,3 +368,33 @@ export function useLogout() {
 // useChatConversations / useChatMessages / useSendMessage / useDeleteConversation
 // hooks were removed. Components call chatApi.sendMessage / chatApi.reset directly
 // (see ChatPage.tsx and ChatPopup.tsx) and keep session_id in local state.
+
+/** The logged-in user's chat sessions. */
+export function useChatSessions(enabled = true) {
+  return useQuery<ChatSessionSummary[]>({
+    queryKey: ["chat", "sessions"],
+    queryFn: () => chatApi.getSessions(),
+    enabled,
+    staleTime: 1000 * 30,
+    retry: false,
+  });
+}
+
+/** Messages of one chat session. */
+export function useChatSessionMessages(sessionId: string | null) {
+  return useQuery<ChatMessageOut[]>({
+    queryKey: ["chat", "session", sessionId],
+    queryFn: () => chatApi.getSessionMessages(sessionId!),
+    enabled: !!sessionId,
+    staleTime: 1000 * 30,
+  });
+}
+
+/** Delete a chat session. */
+export function useDeleteChatSession() {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (id) => chatApi.deleteSession(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chat", "sessions"] }),
+  });
+}
