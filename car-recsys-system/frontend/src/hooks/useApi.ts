@@ -22,6 +22,8 @@ import {
   AuthResponse,
   Review,
   Seller,
+  ColorGroupOption,
+  FeatureOption,
   ReviewsListParams,
   ReviewsListResponse,
   ChatSessionSummary,
@@ -123,6 +125,28 @@ export function useVehicleSeller(vehicleId: string | undefined) {
     queryFn: () => vehiclesApi.getSeller(vehicleId!),
     enabled: !!vehicleId,
     staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+}
+
+/**
+ * Color groups for the swatch filter
+ */
+export function useColorGroups() {
+  return useQuery<ColorGroupOption[]>({
+    queryKey: ['search', 'colors'],
+    queryFn: () => vehiclesApi.getColorGroups(),
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  });
+}
+
+/**
+ * Top feature options for the feature-checkbox filter
+ */
+export function useFeatureOptions(limit = 15) {
+  return useQuery<FeatureOption[]>({
+    queryKey: ['search', 'features', limit],
+    queryFn: () => vehiclesApi.getFeatureOptions(limit),
+    staleTime: 1000 * 60 * 30, // 30 minutes
   });
 }
 

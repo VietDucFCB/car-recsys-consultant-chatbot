@@ -122,6 +122,8 @@ export interface SearchParams {
   transmission?: string;
   drivetrain?: string;
   exterior_color?: string;
+  color?: string;
+  features?: string; // comma-separated feature names (AND semantics)
   min_rating?: number;
   sort_by?: string;
   sort_order?: "asc" | "desc";
@@ -311,7 +313,29 @@ export const vehiclesApi = {
     const response = await api.get<Seller | null>(`/seller/${vehicleId}`);
     return response.data;
   },
+
+  async getColorGroups(): Promise<ColorGroupOption[]> {
+    const response = await api.get<{ colors: ColorGroupOption[] }>("/search/colors");
+    return response.data.colors;
+  },
+
+  async getFeatureOptions(limit = 15): Promise<FeatureOption[]> {
+    const response = await api.get<{ features: FeatureOption[] }>("/search/features", {
+      params: { limit },
+    });
+    return response.data.features;
+  },
 };
+
+export interface ColorGroupOption {
+  color_group: string;
+  count: number;
+}
+
+export interface FeatureOption {
+  feature_name: string;
+  count: number;
+}
 
 export const recommendationsApi = {
   async getSimilar(vehicleId: string, limit = 6): Promise<RecommendationResponse> {
