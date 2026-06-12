@@ -6,15 +6,13 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent,
   DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import UserAvatar from "@/components/UserAvatar";
 import { isAuthenticated, getCurrentUser, authApi } from "@/lib/api";
 
 const Header = () => {
   const navigate = useNavigate();
   const loggedIn = isAuthenticated();
   const user = loggedIn ? getCurrentUser() : null;
-  const initial = (user?.username?.[0] ?? "?").toUpperCase();
-
   const handleLogout = () => {
     authApi.logout();
     // Full reload so the header re-reads auth state from the cleared localStorage.
@@ -73,11 +71,7 @@ const Header = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button aria-label="Account menu" className="rounded-full outline-none focus:ring-2 focus:ring-primary">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-primary text-primary-foreground font-bold">
-                        {initial}
-                      </AvatarFallback>
-                    </Avatar>
+                      <UserAvatar user={user} className="h-9 w-9" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
