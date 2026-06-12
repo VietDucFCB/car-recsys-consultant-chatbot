@@ -252,6 +252,9 @@ class PopularityRecaller:
                     scores.setdefault(r[0], float(r[1]))
         except Exception as exc:  # noqa: BLE001
             log.warning("mv_popular_vehicles unavailable (%s) — car_rating fallback.", exc)
+            # The failed query aborted the transaction; roll back before the
+            # fallback or it dies with "current transaction is aborted".
+            self.db.rollback()
             rows = self.db.execute(
                 text("""
                     SELECT vehicle_id, COALESCE(car_rating, 0) AS score
