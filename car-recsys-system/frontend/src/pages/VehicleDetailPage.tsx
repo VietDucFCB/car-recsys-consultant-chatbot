@@ -141,9 +141,12 @@ const VehicleDetailPage = () => {
             Back to Search
           </Link>
 
-          <div className="grid lg:grid-cols-2 gap-10">
-              {/* Image Gallery */}
-              <ImageGallery images={images} title={vehicle.title} />
+          <div className="grid lg:grid-cols-2 gap-10 lg:items-start">
+              {/* Image Gallery — sticky on desktop so it follows the longer
+                  right column instead of leaving a blank left gap. */}
+              <div className="lg:sticky lg:top-24 self-start">
+                <ImageGallery images={images} title={vehicle.title} />
+              </div>
 
             {/* Details */}
             <div className="space-y-6">
