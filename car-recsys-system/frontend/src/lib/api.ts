@@ -8,6 +8,18 @@ export interface ChatResponse {
   answer: string;
 }
 
+export interface ChatSessionSummary {
+  id: string;
+  title?: string | null;
+  updated_at?: string | null;
+}
+
+export interface ChatMessageOut {
+  role: string;
+  content: string;
+  created_at?: string | null;
+}
+
 export const chatApi = {
   async sendMessage(message: string, sessionId?: string): Promise<ChatResponse> {
     const response = await api.post("/chat", { message, session_id: sessionId });
@@ -17,6 +29,17 @@ export const chatApi = {
   async reset(sessionId: string): Promise<ChatResponse> {
     const response = await api.post("/chat", { message: "reset", session_id: sessionId, reset: true });
     return response.data;
+  },
+  async getSessions(): Promise<ChatSessionSummary[]> {
+    const res = await api.get<ChatSessionSummary[]>("/chat/sessions");
+    return res.data;
+  },
+  async getSessionMessages(sessionId: string): Promise<ChatMessageOut[]> {
+    const res = await api.get<ChatMessageOut[]>(`/chat/sessions/${sessionId}`);
+    return res.data;
+  },
+  async deleteSession(sessionId: string): Promise<void> {
+    await api.delete(`/chat/sessions/${sessionId}`);
   },
 };
 
