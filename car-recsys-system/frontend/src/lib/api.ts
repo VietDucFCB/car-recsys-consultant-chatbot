@@ -66,6 +66,10 @@ export interface Vehicle {
   image_url?: string;
   images?: string[];
   features?: string[];
+  features_grouped?: Record<string, string[]>;
+  clean_title?: boolean | null;
+  has_open_recall?: boolean | null;
+  is_personal_use?: boolean | null;
 }
 
 export interface VehicleDetail extends Vehicle {}
@@ -239,13 +243,9 @@ export interface Seller {
   seller_rating?: number;
   seller_rating_count?: number;
   description?: string;
-  hours_monday?: string;
-  hours_tuesday?: string;
-  hours_wednesday?: string;
-  hours_thursday?: string;
-  hours_friday?: string;
-  hours_saturday?: string;
-  hours_sunday?: string;
+  hours_sales?: string;
+  hours_service?: string;
+  highlights?: string[];
 }
 
 export const vehiclesApi = {
