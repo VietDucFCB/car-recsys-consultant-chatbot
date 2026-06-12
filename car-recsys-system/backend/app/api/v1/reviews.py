@@ -162,13 +162,9 @@ class SellerResponse(BaseModel):
     seller_rating: Optional[float] = None
     seller_rating_count: Optional[int] = None
     description: Optional[str] = None
-    hours_monday: Optional[str] = None
-    hours_tuesday: Optional[str] = None
-    hours_wednesday: Optional[str] = None
-    hours_thursday: Optional[str] = None
-    hours_friday: Optional[str] = None
-    hours_saturday: Optional[str] = None
-    hours_sunday: Optional[str] = None
+    hours_sales: Optional[str] = None
+    hours_service: Optional[str] = None
+    highlights: Optional[List[str]] = None
 
     class Config:
         from_attributes = True
@@ -226,7 +222,7 @@ async def get_vehicle_seller(
     query = text("""
         SELECT s.seller_key, s.seller_name, s.destination, s.seller_website,
                s.seller_rating, s.seller_rating_count, s.description,
-               s.phone_new, s.phone_used, s.hours
+               s.phone_new, s.phone_used, s.hours, s.highlights
         FROM gold.vehicles v
         JOIN gold.sellers s ON s.seller_key = v.seller_key
         WHERE v.vehicle_id = :vehicle_id
@@ -237,27 +233,20 @@ async def get_vehicle_seller(
         return None
 
     hours = row[9] or {}
-
-    def _h(day: str) -> Optional[str]:
-        return hours.get(day) if isinstance(hours, dict) else None
+    highlights = row[10]
+    sales_hours = hours.get("Sales hours") if isinstance(hours, dict) else None
+    service_hours = hours.get("Service hours") if isinstance(hours, dict) else None
 
     return SellerResponse(
         seller_key=row[0],
         seller_name=row[1],
         seller_address=row[2],          # `destination` is a single address string
-        seller_city=None,
-        seller_state=None,
-        seller_zip=None,
         seller_phone=row[7] or row[8],  # prefer New, fall back to Used
         seller_website=row[3],
         seller_rating=float(row[4]) if row[4] is not None else None,
         seller_rating_count=int(row[5]) if row[5] is not None else None,
         description=row[6],
-        hours_monday=_h("Monday"),
-        hours_tuesday=_h("Tuesday"),
-        hours_wednesday=_h("Wednesday"),
-        hours_thursday=_h("Thursday"),
-        hours_friday=_h("Friday"),
-        hours_saturday=_h("Saturday"),
-        hours_sunday=_h("Sunday"),
+        hours_sales=sales_hours,
+        hours_service=service_hours,
+        highlights=highlights if isinstance(highlights, list) else None,
     )
