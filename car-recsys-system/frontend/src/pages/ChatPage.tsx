@@ -18,6 +18,7 @@ import { useChatSessions, useChatSessionMessages, useDeleteChatSession } from '@
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import Header from '@/components/Header';
+import MarkdownMessage from '@/components/MarkdownMessage';
 
 interface Message {
   id: string;
@@ -246,7 +247,11 @@ export default function ChatPage() {
                         ? "bg-primary text-primary-foreground" 
                         : "bg-muted"
                     )}>
-                      <p className="whitespace-pre-wrap text-left">{message.content}</p>
+                      {message.role === 'assistant' ? (
+                        <div className="text-left"><MarkdownMessage content={message.content} /></div>
+                      ) : (
+                        <p className="whitespace-pre-wrap text-left">{message.content}</p>
+                      )}
                     </div>
                     
                     {/* Vehicle Cards */}

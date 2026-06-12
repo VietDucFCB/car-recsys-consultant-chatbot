@@ -6,6 +6,7 @@ import { MessageCircle, X, Send, Loader2, Car, ChevronDown, Maximize2, Trash2 } 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import MarkdownMessage from '@/components/MarkdownMessage';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { chatApi, Vehicle, formatPrice, isAuthenticated } from '@/lib/api';
@@ -212,8 +213,12 @@ export default function ChatPopup() {
                         ? "bg-primary text-primary-foreground" 
                         : "bg-muted"
                     )}>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      
+                      {message.role === 'assistant' ? (
+                        <MarkdownMessage content={message.content} />
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      )}
+
                       {/* Vehicle suggestions */}
                       {message.vehicles && message.vehicles.length > 0 && (
                         <div className="mt-2">
