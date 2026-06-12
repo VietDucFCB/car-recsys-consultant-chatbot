@@ -13,6 +13,7 @@ import ComparePage from "./pages/ComparePage";
 import SellPage from "./pages/SellPage";
 import LoginPage from "./pages/LoginPage";
 import ChatPage from "./pages/ChatPage";
+import ReviewsPage from "./pages/ReviewsPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,7 @@ const App = () => (
                 <Route path="/sell" element={<SellPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/chat" element={<ChatPage />} />
+                <Route path="/reviews" element={<ReviewsPage />} />
                 <Route path="/favorites" element={<FavoritesPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
