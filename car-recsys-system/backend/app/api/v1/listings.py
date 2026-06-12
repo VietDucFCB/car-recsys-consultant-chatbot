@@ -47,7 +47,10 @@ async def get_listing(vehicle_id: str, db: Session = Depends(get_db)):
             v.exterior_rating,
             v.reliability_rating,
             v.vehicle_url,
-            v.image_count as total_images
+            v.image_count as total_images,
+            v.clean_title,
+            v.has_open_recall,
+            v.is_personal_use
         FROM gold.vehicles v
         WHERE v.vehicle_id = :vehicle_id
     """)
@@ -73,12 +76,18 @@ async def get_listing(vehicle_id: str, db: Session = Depends(get_db)):
     
     # Get vehicle features
     features_query = text("""
-        SELECT feature_name 
-        FROM gold.vehicle_features 
+        SELECT feature_category, feature_name
+        FROM gold.vehicle_features
         WHERE vehicle_id = :vehicle_id
+        ORDER BY feature_category NULLS LAST, feature_name
     """)
-    features_result = db.execute(features_query, {'vehicle_id': vehicle_id})
-    features = [row[0] for row in features_result if row[0]]
+    features_rows = db.execute(features_query, {'vehicle_id': vehicle_id}).fetchall()
+    features = [r[1] for r in features_rows if r[1]]                  # flat, back-compat
+    features_grouped: dict[str, list[str]] = {}
+    for cat, name in features_rows:
+        if not name:
+            continue
+        features_grouped.setdefault(cat or "Other", []).append(name)
     
     # Build response
     vehicle_data = {
@@ -114,6 +123,10 @@ async def get_listing(vehicle_id: str, db: Session = Depends(get_db)):
         'image_url': images[0] if images else None,
         'images': images,
         'features': features,
+        'features_grouped': features_grouped,
+        'clean_title': result[29],
+        'has_open_recall': result[30],
+        'is_personal_use': result[31],
     }
     
     return VehicleResponse(**vehicle_data)
