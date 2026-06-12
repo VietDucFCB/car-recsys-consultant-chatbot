@@ -21,6 +21,8 @@ import {
   AuthResponse,
   Review,
   Seller,
+  ReviewsListParams,
+  ReviewsListResponse,
   storeAuthData,
   trackVehicleView,
 } from '@/lib/api';
@@ -170,6 +172,24 @@ export function useDeleteReview(vehicleId: string) {
       qc.invalidateQueries({ queryKey: userReviewKeys.list(vehicleId) });
       qc.invalidateQueries({ queryKey: userReviewKeys.mine(vehicleId) });
     },
+  });
+}
+
+/** Global reviews feed for the /reviews page. */
+export function useAllReviews(params: ReviewsListParams) {
+  return useQuery<ReviewsListResponse>({
+    queryKey: ["reviews", "all", params],
+    queryFn: () => reviewsApi.getAllReviews(params),
+    staleTime: 1000 * 60,
+  });
+}
+
+/** Distinct brands for the reviews filter. */
+export function useReviewBrands() {
+  return useQuery<string[]>({
+    queryKey: ["reviews", "brands"],
+    queryFn: () => reviewsApi.getReviewBrands(),
+    staleTime: 1000 * 60 * 30,
   });
 }
 
