@@ -49,3 +49,6 @@ dist/
 docs/*
 !docs/architecture/
 !docs/architecture/**
+
+# Bỏ qua các file trọng số model nặng
+*.safetensors
