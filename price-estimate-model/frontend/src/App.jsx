@@ -572,7 +572,8 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/predict_price', {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${API_BASE}/predict_price`, {
         method: 'POST',
         body: submitData,
       });
