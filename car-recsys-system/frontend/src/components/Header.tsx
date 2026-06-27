@@ -63,6 +63,14 @@ const Header = () => {
             >
               AI Assistant
             </NavLink>
+            <a
+              href={import.meta.env.VITE_PRICE_ESTIMATE_URL || "https://car-price-frontend-vtinskoecq-uc.a.run.app"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-base font-semibold text-foreground/70 transition-all hover:bg-[#A87601]/10 hover:text-[#A87601] hover:scale-105 rounded-md px-3 py-2"
+            >
+              Price Estimate
+            </a>
           </nav>
 
           <div className="flex items-center gap-2">
