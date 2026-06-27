@@ -1,0 +1,25 @@
+# --- Web API Framework ---
+fastapi>=0.111.0
+uvicorn>=0.30.1
+python-multipart>=0.0.9
+pydantic>=2.7.0
+
+# --- Machine Learning ---
+pandas>=2.2.2
+numpy>=1.26.4
+scikit-learn>=1.5.0
+joblib>=1.4.2
+
+# --- Deep Learning (DINOv2) ---
+torch>=2.3.0
+torchvision>=0.18.0
+transformers>=4.41.2
+Pillow>=10.3.0
+requests>=2.32.2
+
+# --- Models ---
+catboost>=1.2.5
+lightgbm>=4.3.0
+xgboost>=2.0.3
+
+tqdm>=4.66.4
