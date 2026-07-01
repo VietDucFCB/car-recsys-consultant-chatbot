@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useVehicleDetail, useSimilarVehicles, useAddFavorite, useRemoveFavorite, useFavorites, useVehicleReviews, useVehicleSeller } from "@/hooks/useApi";
 import { formatPrice, isAuthenticated } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 const VehicleDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -109,11 +110,18 @@ const VehicleDetailPage = () => {
     }
   };
 
+  // A few listings have junk exterior_color (a bare number from a crawl glitch);
+  // don't surface "41" as a colour — fall back to N/A.
+  const exteriorColor =
+    vehicle.exterior_color && !/^\d+$/.test(vehicle.exterior_color.trim())
+      ? vehicle.exterior_color
+      : 'N/A';
+
   const specs = [
     { icon: Gauge, label: "Mileage", value: vehicle.mileage_str || 'N/A' },
     { icon: Fuel, label: "Fuel Type", value: vehicle.fuel_type || 'N/A' },
     { icon: Settings2, label: "Transmission", value: vehicle.transmission || 'N/A' },
-    { icon: Palette, label: "Exterior", value: vehicle.exterior_color || 'N/A' },
+    { icon: Palette, label: "Exterior", value: exteriorColor },
     { icon: Car, label: "Drivetrain", value: vehicle.drivetrain || 'N/A' },
     { icon: Gauge, label: "MPG", value: vehicle.mpg || 'N/A' },
   ];
@@ -200,13 +208,16 @@ const VehicleDetailPage = () => {
               {/* Specs Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {specs.map((spec, index) => (
-                  <div key={index} className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-                    <div className="p-2 bg-accent/10 rounded-lg">
-                      <spec.icon className="h-4 w-4 text-accent" />
+                  <div
+                    key={index}
+                    className="group flex items-center gap-3 rounded-xl border border-border/50 bg-secondary/40 p-3 transition-all duration-200 hover:border-accent/40 hover:bg-secondary/70"
+                  >
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent ring-1 ring-accent/15 transition-colors group-hover:bg-accent group-hover:text-white">
+                      <spec.icon className="h-4 w-4" />
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">{spec.label}</p>
-                      <p className="text-sm font-medium text-foreground truncate">{spec.value}</p>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{spec.label}</p>
+                      <p className="truncate text-sm font-semibold text-foreground">{spec.value}</p>
                     </div>
                   </div>
                 ))}
@@ -222,12 +233,21 @@ const VehicleDetailPage = () => {
                       Ratings
                     </h3>
                     <div className="grid grid-cols-3 gap-3">
-                      {ratings.map((rating, index) => (
-                        <div key={index} className="text-center p-3 bg-secondary/50 rounded-lg">
-                          <p className="text-2xl font-bold text-foreground">{rating.value?.toFixed(1)}</p>
-                          <p className="text-xs text-muted-foreground">{rating.label}</p>
-                        </div>
-                      ))}
+                      {ratings.map((rating, index) => {
+                        const v = rating.value ?? 0;
+                        const strong = v >= 4.5;
+                        return (
+                          <div
+                            key={index}
+                            className="rounded-xl border border-border/50 bg-secondary/40 p-3 text-center transition-colors hover:border-accent/40"
+                          >
+                            <p className={cn("text-2xl font-bold", strong ? "text-accent" : "text-foreground")}>
+                              {v.toFixed(1)}
+                            </p>
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{rating.label}</p>
+                          </div>
+                        );
+                      })}
                     </div>
                     {vehicle.percentage_recommend && (
                       <p className="text-sm text-muted-foreground mt-3 text-center">
