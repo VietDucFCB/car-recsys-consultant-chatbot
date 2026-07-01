@@ -411,10 +411,14 @@ const SearchPage = () => {
         <div className="container mx-auto px-4">
           {/* Page Header */}
           <div className="mb-10">
-            <h1 className="font-poppins text-3xl md:text-4xl font-semibold text-foreground mb-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A87601]">
+              Inventory
+            </span>
+            <h1 className="mt-2 font-poppins text-3xl md:text-4xl font-bold text-foreground tracking-tight">
               Browse Inventory
             </h1>
-            <p className="text-muted-foreground">
+            <div className="mt-3 h-1 w-14 rounded-full bg-[#A87601]" />
+            <p className="mt-3 text-muted-foreground">
               Explore our collection of quality vehicles
             </p>
           </div>
@@ -473,10 +477,15 @@ const SearchPage = () => {
           <div className="flex gap-8">
             {/* Desktop Sidebar Filters */}
             <aside className="hidden md:block w-72 shrink-0">
-              <div className="sticky top-28 bg-[#E6E6E6] rounded-2xl p-6 border border-[#A87601]">
-                <h3 className="font-poppins text-2xl font-semibold mb-6 text-black text-center">
-                  Filters
-                </h3>
+              <div className="sticky top-28 rounded-2xl bg-white p-6 border border-black/10 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.35)]">
+                <div className="mb-6 flex items-center gap-2.5 border-b border-black/10 pb-4">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#A87601]/10 text-[#A87601]">
+                    <SlidersHorizontal className="h-5 w-5" />
+                  </span>
+                  <h3 className="font-poppins text-xl font-bold text-black">
+                    Filters
+                  </h3>
+                </div>
                 <FilterContent />
               </div>
             </aside>
@@ -490,7 +499,11 @@ const SearchPage = () => {
                     "Searching..."
                   ) : (
                     <>
-                      Found <span className="text-foreground font-semibold">{data?.total || 0}</span> vehicles
+                      Found{" "}
+                      <span className="font-bold text-[#A87601]">
+                        {(data?.total || 0).toLocaleString()}
+                      </span>{" "}
+                      vehicles
                     </>
                   )}
                 </p>
