@@ -290,7 +290,7 @@ const LoginPage = () => {
         <img
           src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1200&h=1600&fit=crop&q=80"
           alt="Luxury car"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover brightness-75"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
