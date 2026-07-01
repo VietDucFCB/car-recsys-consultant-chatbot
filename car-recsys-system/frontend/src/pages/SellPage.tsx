@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, X, Plus, Camera } from "lucide-react";
+import { X, Plus, Camera, Sparkles, Loader2, Check } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,69 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { brands, fuelTypes, transmissions } from "@/data/vehicles";
 
+// Same live estimator backend the /price-estimate page uses.
+const PRICE_API =
+  import.meta.env.VITE_PRICE_API_URL ||
+  "https://car-price-backend-893613114700.us-central1.run.app";
+
+interface EstimateResult {
+  low: number;
+  mid: number;
+  high: number;
+}
+
 const SellPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Controlled fields (needed so the AI estimate can read the vehicle info).
+  const [form, setForm] = useState({
+    brand: "", model: "", year: "", price: "",
+    mileage: "", fuel: "", transmission: "", color: "",
+  });
+  const setField = (k: keyof typeof form, v: string) =>
+    setForm((f) => ({ ...f, [k]: v }));
+
+  // AI price estimate state.
+  const [estimating, setEstimating] = useState(false);
+  const [estimate, setEstimate] = useState<EstimateResult | null>(null);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
+
+  const canEstimate =
+    form.brand && form.model && form.year && form.mileage && form.fuel && form.transmission;
+
+  const estimatePrice = async () => {
+    if (!canEstimate || estimating) return;
+    setEstimating(true);
+    setEstimate(null);
+    setEstimateError(null);
+    try {
+      const fd = new FormData();
+      fd.append("title", `${form.year} ${form.brand} ${form.model}`);
+      fd.append("brand", form.brand);
+      fd.append("model_style", "Sedan"); // body style unknown on the sell form
+      fd.append("engine", "Unknown");
+      fd.append("fuel_type", form.fuel);
+      fd.append("transmission", form.transmission);
+      fd.append("exterior_color", form.color || "Unknown");
+      fd.append("year", form.year);
+      fd.append("mileage", form.mileage);
+      const res = await fetch(`${PRICE_API}/predict_price`, { method: "POST", body: fd });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+      setEstimate({
+        low: data.price_range_usd?.low ?? data.estimated_price_usd,
+        mid: data.estimated_price_usd,
+        high: data.price_range_usd?.high ?? data.estimated_price_usd,
+      });
+    } catch {
+      setEstimateError("Could not estimate right now. Please try again.");
+    } finally {
+      setEstimating(false);
+    }
+  };
 
   const handleImageUpload = () => {
     const mockImages = [
@@ -52,48 +110,27 @@ const SellPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ backgroundColor: "#CFCFCF" }}>
-      {/* Large circle top-left (cut off) */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "520px", height: "520px", top: "-180px", left: "-160px", backgroundColor: "#757575", opacity: 0.85 }} />
-      {/* Medium circle top-right (cut off) */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "300px", height: "300px", top: "-80px", right: "-60px", backgroundColor: "#757575", opacity: 0.7 }} />
-      {/* Large semicircle bottom-right */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "680px", height: "680px", bottom: "-280px", right: "-180px", backgroundColor: "#757575", opacity: 0.85 }} />
-      {/* Medium circle bottom-left (cut off) */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "360px", height: "360px", bottom: "-120px", left: "-100px", backgroundColor: "#757575", opacity: 0.65 }} />
-      {/* Medium circle left-center */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "200px", height: "200px", top: "42%", left: "-70px", backgroundColor: "#757575", opacity: 0.55 }} />
-      {/* Small dot top-center */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "52px", height: "52px", top: "60px", left: "44%", backgroundColor: "#6E6E6E", opacity: 0.9 }} />
-      {/* Small dot right-center */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "36px", height: "36px", top: "38%", right: "12%", backgroundColor: "#6E6E6E", opacity: 0.75 }} />
-      {/* Tiny dot top-left area */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "22px", height: "22px", top: "22%", left: "18%", backgroundColor: "#6E6E6E", opacity: 0.6 }} />
-      {/* Tiny dot bottom-center */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "18px", height: "18px", bottom: "18%", left: "52%", backgroundColor: "#6E6E6E", opacity: 0.65 }} />
-      {/* Small circle mid-right */}
-      <div className="pointer-events-none absolute rounded-full"
-        style={{ width: "110px", height: "110px", top: "55%", right: "-30px", backgroundColor: "#757575", opacity: 0.6 }} />
-
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* soft gold glow at the top for atmosphere (no flat gray) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-80"
+        style={{ background: "radial-gradient(60% 100% at 50% 0%, rgba(168,118,1,0.10), transparent 70%)" }}
+      />
       <Header />
       <main className="flex-1 pt-28 pb-16 relative z-10">
         <div className="container mx-auto px-4 max-w-3xl">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="font-poppins text-3xl md:text-4xl font-semibold text-white mb-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#A87601]">
+              List your vehicle
+            </span>
+            <h1 className="mt-2 font-poppins text-3xl md:text-4xl font-bold text-foreground tracking-tight">
               Sell Your Car
             </h1>
-            <p className="text-black-100 text-lg">
-              Fill in the details about your car to find a buyer quickly
+            <div className="mx-auto mt-3 h-1 w-14 rounded-full bg-[#A87601]" />
+            <p className="mt-4 text-muted-foreground text-lg">
+              Fill in the details to find a buyer quickly — and get an instant AI price estimate.
             </p>
           </div>
 
@@ -150,7 +187,7 @@ const SellPage = () => {
               <div className="grid sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
                   <Label htmlFor="brand">Brand *</Label>
-                  <Select required>
+                  <Select required value={form.brand} onValueChange={(v) => setField("brand", v)}>
                     <SelectTrigger className="h-12 rounded-xl">
                       <SelectValue placeholder="Select brand" />
                     </SelectTrigger>
@@ -166,12 +203,13 @@ const SellPage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="model">Model *</Label>
-                  <Input id="model" placeholder="e.g., Camry, CR-V..." required className="h-12 rounded-xl" />
+                  <Input id="model" placeholder="e.g., Camry, CR-V..." required className="h-12 rounded-xl"
+                    value={form.model} onChange={(e) => setField("model", e.target.value)} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="year">Year *</Label>
-                  <Select required>
+                  <Select required value={form.year} onValueChange={(v) => setField("year", v)}>
                     <SelectTrigger className="h-12 rounded-xl">
                       <SelectValue placeholder="Select year" />
                     </SelectTrigger>
@@ -187,17 +225,19 @@ const SellPage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="price">Price ($) *</Label>
-                  <Input id="price" type="number" placeholder="45000" required className="h-12 rounded-xl" />
+                  <Input id="price" type="number" placeholder="45000" required className="h-12 rounded-xl"
+                    value={form.price} onChange={(e) => setField("price", e.target.value)} />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="mileage">Mileage (km) *</Label>
-                  <Input id="mileage" type="number" placeholder="10000" required className="h-12 rounded-xl" />
+                  <Label htmlFor="mileage">Mileage (mi) *</Label>
+                  <Input id="mileage" type="number" placeholder="10000" required className="h-12 rounded-xl"
+                    value={form.mileage} onChange={(e) => setField("mileage", e.target.value)} />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="fuel">Fuel Type *</Label>
-                  <Select required>
+                  <Select required value={form.fuel} onValueChange={(v) => setField("fuel", v)}>
                     <SelectTrigger className="h-12 rounded-xl">
                       <SelectValue placeholder="Select fuel type" />
                     </SelectTrigger>
@@ -213,7 +253,7 @@ const SellPage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="transmission">Transmission *</Label>
-                  <Select required>
+                  <Select required value={form.transmission} onValueChange={(v) => setField("transmission", v)}>
                     <SelectTrigger className="h-12 rounded-xl">
                       <SelectValue placeholder="Select transmission" />
                     </SelectTrigger>
@@ -229,8 +269,67 @@ const SellPage = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="color">Color *</Label>
-                  <Input id="color" placeholder="e.g., White, Black..." required className="h-12 rounded-xl" />
+                  <Input id="color" placeholder="e.g., White, Black..." required className="h-12 rounded-xl"
+                    value={form.color} onChange={(e) => setField("color", e.target.value)} />
                 </div>
+              </div>
+
+              {/* ── AI price estimate (integrates the /price-estimate model) ── */}
+              <div className="mt-6 rounded-xl border border-[#A87601]/30 bg-[#A87601]/[0.04] p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#A87601]/12 text-[#A87601]">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-foreground">Not sure how to price it?</p>
+                      <p className="text-sm text-muted-foreground">
+                        Get an instant AI estimate from the vehicle details above.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={estimatePrice}
+                    disabled={!canEstimate || estimating}
+                    className="rounded-xl bg-[#A87601] text-white hover:bg-[#c48c07] disabled:opacity-50"
+                  >
+                    {estimating ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Estimating…</>
+                    ) : (
+                      <><Sparkles className="mr-2 h-4 w-4" /> Estimate with AI</>
+                    )}
+                  </Button>
+                </div>
+
+                {!canEstimate && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Fill in brand, model, year, mileage, fuel and transmission to enable the estimate.
+                  </p>
+                )}
+                {estimateError && (
+                  <p className="mt-3 text-sm text-destructive">{estimateError}</p>
+                )}
+                {estimate && (
+                  <div className="mt-4 rounded-lg border border-border bg-card p-4 animate-fade-in opacity-0" style={{ animationFillMode: "forwards" }}>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Estimated market value</p>
+                    <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <span className="text-2xl font-bold text-[#A87601]">${Math.round(estimate.mid).toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground">
+                        range ${Math.round(estimate.low).toLocaleString()} – ${Math.round(estimate.high).toLocaleString()}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setField("price", String(Math.round(estimate.mid)))}
+                      className="mt-3 rounded-lg border-[#A87601]/40 text-[#A87601] hover:bg-[#A87601]/10"
+                    >
+                      <Check className="mr-1.5 h-4 w-4" /> Use this price
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
