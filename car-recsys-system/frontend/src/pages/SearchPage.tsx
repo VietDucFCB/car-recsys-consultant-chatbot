@@ -181,14 +181,14 @@ const SearchPage = () => {
     <div className="space-y-6">
       {/* Brand */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Make / Brand
         </Label>
         <Select value={selectedBrand} onValueChange={(val) => { setSelectedBrand(val); setPage(1); }}>
-          <SelectTrigger className="h-10 bg-white text-black border-white/20">
+          <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
             <SelectValue placeholder="All makes" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white text-neutral-900 border-neutral-200">
             <SelectItem value="all">All makes</SelectItem>
             {brands.map((brand) => (
               <SelectItem key={brand} value={brand}>{brand}</SelectItem>
@@ -199,15 +199,15 @@ const SearchPage = () => {
 
       {/* Registration Year */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Registration Year
         </Label>
         <div className="grid grid-cols-2 gap-3">
           <Select value={yearMin || "all"} onValueChange={(val) => { setYearMin(val === "all" ? "" : val); setPage(1); }}>
-            <SelectTrigger className="h-10 bg-white text-black border-white/20">
+            <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
               <SelectValue placeholder="From" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white text-neutral-900 border-neutral-200">
               <SelectItem value="all">From</SelectItem>
               {years.map((y) => (
                 <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -215,10 +215,10 @@ const SearchPage = () => {
             </SelectContent>
           </Select>
           <Select value={yearMax || "all"} onValueChange={(val) => { setYearMax(val === "all" ? "" : val); setPage(1); }}>
-            <SelectTrigger className="h-10 bg-white text-black border-white/20">
+            <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
               <SelectValue placeholder="To" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white text-neutral-900 border-neutral-200">
               <SelectItem value="all">To</SelectItem>
               {years.map((y) => (
                 <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -230,7 +230,7 @@ const SearchPage = () => {
 
       {/* Price Range */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Price Range
         </Label>
         <div className="grid grid-cols-2 gap-3">
@@ -239,28 +239,28 @@ const SearchPage = () => {
             placeholder="Min $"
             value={priceMin}
             onChange={(e) => { setPriceMin(e.target.value); setPage(1); }}
-            className="h-10 bg-white text-black border-white/20"
+            className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40"
           />
           <Input
             type="text"
             placeholder="Max $"
             value={priceMax}
             onChange={(e) => { setPriceMax(e.target.value); setPage(1); }}
-            className="h-10 bg-white text-black border-white/20"
+            className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40"
           />
         </div>
       </div>
 
       {/* Mileage */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Maximum Mileage
         </Label>
         <Select value={mileageMax} onValueChange={(val) => { setMileageMax(val); setPage(1); }}>
-          <SelectTrigger className="h-10 bg-white text-black border-white/20">
+          <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
             <SelectValue placeholder="Any mileage" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white text-neutral-900 border-neutral-200">
             <SelectItem value="all">Any mileage</SelectItem>
             <SelectItem value="10000">Under 10,000 mi</SelectItem>
             <SelectItem value="25000">Under 25,000 mi</SelectItem>
@@ -273,14 +273,14 @@ const SearchPage = () => {
 
       {/* Fuel Type */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Fuel Type
         </Label>
         <Select value={selectedFuel} onValueChange={(val) => { setSelectedFuel(val); setPage(1); }}>
-          <SelectTrigger className="h-10 bg-white text-black border-white/20">
+          <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
             <SelectValue placeholder="All types" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white text-neutral-900 border-neutral-200">
             <SelectItem value="all">All types</SelectItem>
             {fuelTypes.map((fuel) => (
               <SelectItem key={fuel} value={fuel}>{fuel}</SelectItem>
@@ -291,14 +291,14 @@ const SearchPage = () => {
 
       {/* Transmission */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Transmission
         </Label>
         <Select value={selectedTransmission} onValueChange={(val) => { setSelectedTransmission(val); setPage(1); }}>
-          <SelectTrigger className="h-10 bg-white text-black border-white/20">
+          <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
             <SelectValue placeholder="All transmissions" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white text-neutral-900 border-neutral-200">
             <SelectItem value="all">All transmissions</SelectItem>
             {transmissions.map((trans) => (
               <SelectItem key={trans} value={trans}>{trans}</SelectItem>
@@ -309,14 +309,14 @@ const SearchPage = () => {
 
       {/* Drivetrain */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Drivetrain
         </Label>
         <Select value={selectedDrivetrain} onValueChange={(val) => { setSelectedDrivetrain(val); setPage(1); }}>
-          <SelectTrigger className="h-10 bg-white text-black border-white/20">
+          <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
             <SelectValue placeholder="All drivetrains" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white text-neutral-900 border-neutral-200">
             <SelectItem value="all">All drivetrains</SelectItem>
             {drivetrains.map((dt) => (
               <SelectItem key={dt.value} value={dt.value}>{dt.label}</SelectItem>
@@ -327,14 +327,14 @@ const SearchPage = () => {
 
       {/* Body Type */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Body Type
         </Label>
         <Select value={selectedBody} onValueChange={(val) => { setSelectedBody(val); setPage(1); }}>
-          <SelectTrigger className="h-10 bg-white text-black border-white/20">
+          <SelectTrigger className="h-10 bg-white text-black font-medium border-neutral-300 placeholder:text-neutral-500 focus:border-[#A87601] focus-visible:ring-[#A87601]/40">
             <SelectValue placeholder="All body types" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-white text-neutral-900 border-neutral-200">
             <SelectItem value="all">All body types</SelectItem>
             {bodyTypes.map((bt) => (
               <SelectItem key={bt} value={bt}>{bt}</SelectItem>
@@ -345,7 +345,7 @@ const SearchPage = () => {
 
       {/* Exterior Color */}
       <div>
-        <Label className="text-sm font-medium mb-2 block text-black">
+        <Label className="text-sm font-semibold mb-2 block text-neutral-900">
           Exterior Color
         </Label>
         <div className="grid grid-cols-6 gap-2">
@@ -374,7 +374,7 @@ const SearchPage = () => {
       {/* Features */}
       {featureOptions && featureOptions.length > 0 && (
         <div>
-          <Label className="text-sm font-medium mb-2 block text-black">
+          <Label className="text-sm font-semibold mb-2 block text-neutral-900">
             Features
           </Label>
           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -446,7 +446,7 @@ const SearchPage = () => {
               <SelectTrigger className="w-48 h-12">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-neutral-900 border-neutral-200">
                 <SelectItem value="created_at-desc">Newest First</SelectItem>
                 <SelectItem value="created_at-asc">Oldest First</SelectItem>
                 <SelectItem value="price-asc">Price: Low to High</SelectItem>
