@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1783008406.85318 "c:/Users/Lenovo/Videos/car-recsys-consultant-chatbot/car-recsys-system/do_an_cuoi_ki_1_nam_4/main.tex" "main.pdf" "main" 1783008409.24121 0
+["pdflatex"] 1783008431.08979 "c:/Users/Lenovo/Videos/car-recsys-consultant-chatbot/car-recsys-system/do_an_cuoi_ki_1_nam_4/main.tex" "main.pdf" "main" 1783008433.36373 0
   "C:/Users/Lenovo/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1782745532 89969 e95579120a3aa0ebc21d2737ca2ba701 ""
   "C:/Users/Lenovo/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/tcbx1000.pk" 1782813430 12124 0de0371d95a06a2068d12fb62b477885 ""
   "C:/Users/Lenovo/AppData/Local/MiKTeX/fonts/pk/ljfour/jknappen/ec/dpi600/tcrm1000.pk" 1782745537 11548 44c2fcf839dc0721f6b1766fd695a4f9 ""
@@ -193,7 +193,7 @@
   "C:/Users/Lenovo/AppData/Local/Programs/MiKTeX/tex/latex/vntex/vncaps.tex" 1368738347 3273 a55ebdb07413d2fea580f210e3c0b252 ""
   "C:/Users/Lenovo/AppData/Local/Programs/MiKTeX/tex/latex/vntex/vntex.sty" 1368738347 2639 5dcda92be6ac6914eed5faab11913901 ""
   "C:/Users/Lenovo/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1729265222 55384 b454dec21c2d9f45ec0b793f0995b992 ""
-  "c:/Users/Lenovo/Videos/car-recsys-consultant-chatbot/car-recsys-system/do_an_cuoi_ki_1_nam_4/main.tex" 1783008403 15617 8e3c65bcfb25807c7ed0f46c465a0cb2 ""
+  "c:/Users/Lenovo/Videos/car-recsys-consultant-chatbot/car-recsys-system/do_an_cuoi_ki_1_nam_4/main.tex" 1783008427 15593 f012730e0bddb2791208d7ee419ff238 ""
   "chapters/ChatBot.tex" 1782927929 13679 8d9f17d95b1d76fcb6646a18721a2971 ""
   "chapters/LoiCamDoan.tex" 1782749591 994 dcd0531f578672b5a2b765b05573f1cb ""
   "chapters/NhanXetHuongDan.tex" 1782749618 1293 dfdd5a9c6f03791437374293d209e0ea ""
@@ -214,16 +214,14 @@
   "images/diagram.png" 1783008276 201329 c0a24fb6ffc659eff6767d412f4f606a ""
   "images/recommendation_flow.png" 1782652360 70684 f231de1a58c5569e1fc190160b29bff1 ""
   "images/system_architecture_overview.png" 1782652360 65463 ef0425f19be77130197c234298e23495 ""
-  "main.aux" 1783008408 11862 6ac35d104aa965a12827eb6fa9735ca8 "pdflatex"
-  "main.lof" 1783008408 1148 1c990761440f56ce6b7777a8d3c066a7 "pdflatex"
-  "main.lot" 1783008408 170 5172fc40d96ddf0ade05c2687a3253b9 "pdflatex"
-  "main.tex" 1783008403 15617 8e3c65bcfb25807c7ed0f46c465a0cb2 ""
-  "main.toc" 1783008408 6329 3557e8374ce0fb67887fa12b07ea1e26 "pdflatex"
+  "main.aux" 1783008433 11862 4631859274dcb887a3c96d93370d039e "pdflatex"
+  "main.lof" 1783008433 1148 1c990761440f56ce6b7777a8d3c066a7 "pdflatex"
+  "main.tex" 1783008427 15593 f012730e0bddb2791208d7ee419ff238 ""
+  "main.toc" 1783008433 6329 3557e8374ce0fb67887fa12b07ea1e26 "pdflatex"
   (generated)
   "main.aux"
   "main.lof"
   "main.log"
-  "main.lot"
   "main.pdf"
   "main.toc"
   (rewritten before read)
